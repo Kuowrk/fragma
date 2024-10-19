@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:,">
+    <title>Fragmentmakerrenderengine</title>
+    <style>
+        body {
+            background-color: #1f1f28;
+        }
+
+        canvas {
+            background-color: #363646;
+        }
+
+        #canvas-container {
+            display: flex;
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body>
+<div id="canvas-container"></div>
+<script type="module">
+    import init from "./pkg/fragma.js";
+    init().then(() => {
+        console.log("WASM loaded.")
+    });
+</script>
+</body>
+
+</html>

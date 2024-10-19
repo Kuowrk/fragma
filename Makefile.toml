@@ -1,0 +1,30 @@
+[env]
+RUST_LOG = "info"
+
+[tasks.run]
+command = "cargo"
+args = ["run"]
+
+[tasks.build]
+command = "cargo"
+args = ["build"]
+
+[tasks.test]
+command = "cargo"
+args = ["test"]
+
+[tasks.check]
+command = "cargo"
+args = ["check"]
+
+[tasks.web-build]
+command = "wasm-pack"
+args = ["build", "--target", "web"]
+
+[tasks.http-server]
+command = "python"
+args = ["-m", "http.server", "8800", "-d", "."]
+
+[tasks.web]
+description = "Build for web and start an HTTP server"
+dependencies = ["web-build", "http-server"]
