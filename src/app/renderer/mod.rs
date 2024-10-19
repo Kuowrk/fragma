@@ -56,8 +56,11 @@ impl<'window> Renderer<'window> {
     pub async fn new(window: &'window Window) -> Result<Renderer<'window>> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             #[cfg(not(target_arch = "wasm32"))]
-            backends: wgpu::Backends::PRIMARY,
+            backends: wgpu::util::backend_bits_from_env()
+                .unwrap_or(wgpu::Backends::PRIMARY),
             #[cfg(target_arch = "wasm32")]
+            // NOTE: WebGPU is supported, but does not yet work in release version of Firefox
+            //backends: wgpu::Backends::BROWSER_WEBGPU,
             backends: wgpu::Backends::GL,
             ..Default::default()
         });
