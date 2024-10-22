@@ -1,49 +1,25 @@
-mod vertex;
 mod viewport;
 mod assets;
+mod resources;
 
 use color_eyre::eyre::{eyre, OptionExt, Result};
 use image::{Rgba, RgbaImage};
 use wgpu::util::DeviceExt;
 use winit::{dpi::PhysicalSize, window::Window};
+use resources::vertex::Vertex;
+use self::viewport::Viewport;
 
-use self::{vertex::Vertex, viewport::Viewport};
-
-const FULLSCREEN_QUAD_VERTICES: &[Vertex] = &[
-    Vertex {
-        position: [-1.0, 1.0, 0.0],
-        uv: [0.0, 0.0],
-    },
-    Vertex {
-        position: [-1.0, -1.0, 0.0],
-        uv: [0.0, 1.0],
-    },
-    Vertex {
-        position: [1.0, 1.0, 0.0],
-        uv: [1.0, 0.0],
-    },
-    Vertex {
-        position: [1.0, 1.0, 0.0],
-        uv: [1.0, 0.0],
-    },
-    Vertex {
-        position: [-1.0, -1.0, 0.0],
-        uv: [0.0, 1.0],
-    },
-    Vertex {
-        position: [1.0, -1.0, 0.0],
-        uv: [1.0, 1.0],
-    },
-];
 
 pub struct Renderer<'window> {
     viewport: Viewport<'window>,
     device: wgpu::Device,
     queue: wgpu::Queue,
     render_pipeline: wgpu::RenderPipeline,
+
     texture_bind_group_layout: wgpu::BindGroupLayout,
 
-    loaded_assets: assets::Assets,
+    assets: assets::Assets,
+    resources: resources::Resources,
 
     bg_quad_vbuffer: wgpu::Buffer,
     bg_bind_group: wgpu::BindGroup,
@@ -179,7 +155,7 @@ impl<'window> Renderer<'window> {
         });
 
         let loaded_assets = {
-            let mut assets = assets::Assets::default();
+            let mut assets = r#mod::Assets::default();
 
             let mut black_image = RgbaImage::new(1, 1);
             black_image.put_pixel(0, 0, Rgba([0, 0, 0, 255]));
@@ -189,11 +165,15 @@ impl<'window> Renderer<'window> {
             white_image.put_pixel(0, 0, Rgba([255, 255, 255, 255]));
             assets.add_image("White".to_owned(), white_image);
 
+            let tree_image_bytes = include_bytes!("../../../assets/tree.png");
+            let tree_image = image::load_from_memory(tree_image_bytes)?;
+            assets.add_image("Tree".to_owned(), tree_image.to_rgba8());
+
             assets
         };
 
         let bg_bind_group = Self::create_texture(
-            loaded_assets.get_image("Black").ok_or_eyre("Failed to load black image")?,
+            loaded_assets.get_image("Tree").ok_or_eyre("Image not found in assets")?,
             "background_texture",
             &device,
             &queue,
