@@ -2,7 +2,7 @@ mod vertex;
 mod viewport;
 mod assets;
 
-use color_eyre::eyre::{OptionExt, Result};
+use color_eyre::eyre::{eyre, OptionExt, Result};
 use image::{Rgba, RgbaImage};
 use wgpu::util::DeviceExt;
 use winit::{dpi::PhysicalSize, window::Window};
@@ -92,7 +92,7 @@ impl<'window> Renderer<'window> {
                 None,
             )
             .await
-            .unwrap();
+            .map_err(|e| eyre!(e.to_string()))?;
 
         let background = wgpu::Color {
             r: 0.1,
