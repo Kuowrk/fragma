@@ -1,11 +1,13 @@
 use color_eyre::eyre::Result;
 use winit::{dpi::PhysicalSize, window::Window};
 
+/// Viewport contains the window and wgpu surface.
+/// It is the target for rendering.
 pub struct Viewport<'window> {
     window: &'window Window,
     surface: wgpu::Surface<'window>,
     config: wgpu::SurfaceConfiguration,
-    size: winit::dpi::PhysicalSize<u32>,
+    size: PhysicalSize<u32>,
     background: wgpu::Color,
 }
 

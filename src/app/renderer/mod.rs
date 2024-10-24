@@ -1,25 +1,24 @@
-mod viewport;
-mod assets;
-mod resources;
-
 use color_eyre::eyre::{eyre, OptionExt, Result};
 use image::{Rgba, RgbaImage};
 use wgpu::util::DeviceExt;
 use winit::{dpi::PhysicalSize, window::Window};
-use resources::vertex::Vertex;
-use self::viewport::Viewport;
 
+mod viewport;
+mod resources;
+mod context;
+mod frame;
+mod draw_context;
+
+use context::Context;
+use resources::Resources;
+use resources::vertex::Vertex;
+use viewport::Viewport;
 
 pub struct Renderer<'window> {
     viewport: Viewport<'window>,
     device: wgpu::Device,
     queue: wgpu::Queue,
-    render_pipeline: wgpu::RenderPipeline,
-
-    texture_bind_group_layout: wgpu::BindGroupLayout,
-
-    assets: assets::Assets,
-    resources: resources::Resources,
+    resources: Resources,
 
     bg_quad_vbuffer: wgpu::Buffer,
     bg_bind_group: wgpu::BindGroup,
@@ -77,81 +76,13 @@ impl<'window> Renderer<'window> {
             a: 1.0,
         };
         let viewport = Viewport::new(window, background, surface, &adapter)?;
+        let context = Context::new(&adapter).await?;
 
-        let shader = device.create_shader_module(wgpu::include_wgsl!("../../../shaders/basic.wgsl"));
-
-        let texture_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                ],
-                label: Some("texture_bind_group_layout"),
-            });
-
-        let render_pipeline_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout],
-                push_constant_ranges: &[],
-            });
 
         let bg_quad_vbuffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Background Quad Vertex Buffer"),
             contents: bytemuck::cast_slice(FULLSCREEN_QUAD_VERTICES),
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-        });
-
-        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Render Pipeline"),
-            layout: Some(&render_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: "vs_main",
-                buffers: &[Vertex::desc()],
-                compilation_options: Default::default(),
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: "fs_main",
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: viewport.get_config().format,
-                    blend: Some(wgpu::BlendState::REPLACE),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-                compilation_options: Default::default(),
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
-                polygon_mode: wgpu::PolygonMode::Fill,
-                unclipped_depth: false,
-                conservative: false,
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-            multiview: None,
-            cache: None,
         });
 
         let loaded_assets = {
@@ -207,9 +138,7 @@ impl<'window> Renderer<'window> {
         self.resize_background_texture();
     }
 
-    pub fn update_scene(&mut self) {}
-
-    pub fn render_scene(&mut self) -> core::result::Result<(), wgpu::SurfaceError> {
+    pub fn render(&mut self, scene: Scene, camera: Camera) -> core::result::Result<(), wgpu::SurfaceError> {
         let output = self.viewport.get_current_texture()?;
         let view = output
             .texture
