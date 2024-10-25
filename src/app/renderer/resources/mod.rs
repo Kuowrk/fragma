@@ -12,6 +12,7 @@ mod material;
 mod texture;
 pub mod shader_data;
 
+/// Global resources
 pub struct Resources {
     pub models: HashMap<String, model::Model>,
     pub textures: HashMap<String, texture::Texture>,

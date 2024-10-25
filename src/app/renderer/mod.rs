@@ -5,11 +5,10 @@ use winit::{dpi::PhysicalSize, window::Window};
 
 mod viewport;
 mod resources;
-mod context;
 mod frame;
-mod draw_context;
+mod camera;
+mod scene;
 
-use context::Context;
 use resources::Resources;
 use resources::vertex::Vertex;
 use viewport::Viewport;
