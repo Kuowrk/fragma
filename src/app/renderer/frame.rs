@@ -1,8 +1,10 @@
+use std::marker::PhantomData;
 use super::resources::shader_data::{ShaderCameraUniform, ShaderSceneUniform};
+use color_eyre::eyre::Result;
 
 // Contains everything needed to draw a frame
 pub struct FrameDrawContext<'a> {
-
+    phantom_data: PhantomData<&'a ()>,
 }
 
 #[derive(Debug)]
@@ -25,6 +27,6 @@ impl Frame {
     }
 
     pub fn draw(&self, ctx: FrameDrawContext) -> Result<()> {
-
+        Ok(())
     }
 }

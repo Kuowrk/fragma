@@ -7,11 +7,13 @@ use winit::{
     keyboard::{Key, NamedKey},
     window::{Window, WindowBuilder},
 };
-use renderer::Renderer;
+use renderer::{Camera, Renderer, Scene};
 
 pub struct App {
     event_loop: EventLoop<()>,
     window: Window,
+    scene: Scene,
+    camera: Camera,
 }
 
 impl App {
@@ -46,7 +48,12 @@ impl App {
                 .expect("Failed to append canvas to element with id=\"canvas-container\"");
         }
 
-        Ok(Self { event_loop, window })
+        Ok(Self {
+            event_loop,
+            window,
+            scene: Scene::default(),
+            camera: Camera::default(),
+        })
     }
 
     pub async fn run(self) -> Result<()> {
@@ -64,18 +71,16 @@ impl App {
                     WindowEvent::CloseRequested => close_requested = true,
                     WindowEvent::RedrawRequested => {
                         renderer.get_window().pre_present_notify();
-                        match renderer.render_scene() {
+                        match renderer.render(&self.scene, &self.camera) {
                             Ok(_) => {}
-                            Err(wgpu::SurfaceError::Lost) => renderer.resize(renderer.get_size()),
-                            Err(wgpu::SurfaceError::OutOfMemory) => close_requested = true,
-                            Err(e) => log::error!("Unexpected error: {:?}", e),
-                        }
+                            Err(_) => close_requested = true,
+                        };
                     }
                     WindowEvent::Resized(physical_size) => {
                         renderer.resize(*physical_size);
                     }
                     WindowEvent::ScaleFactorChanged { scale_factor, .. } => {
-                        let mut new_size = renderer.get_size();
+                        let mut new_size = renderer.get_viewport_size();
                         new_size.width = (new_size.width as f64 * scale_factor) as u32;
                         new_size.height = (new_size.height as f64 * scale_factor) as u32;
 

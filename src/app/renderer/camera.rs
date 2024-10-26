@@ -89,7 +89,7 @@ impl Camera {
         viewport_width: f32,
         viewport_height: f32,
     ) -> Mat4 {
-        self.proj_mat(viewport_width, viewport_height) * self.view_mat()
+        self.get_proj_mat(viewport_width, viewport_height) * self.get_view_mat()
     }
 
     pub fn get_view_mat(&self) -> Mat4 {

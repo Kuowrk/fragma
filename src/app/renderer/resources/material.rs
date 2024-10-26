@@ -4,13 +4,17 @@ use crate::app::renderer::resources::shader_data::{ShaderPushConstants, ShaderVe
 use crate::app::renderer::resources::vertex::Vertex;
 use crate::app::renderer::viewport::Viewport;
 
-pub struct Material {
+pub struct Material<'a> {
     pipeline: wgpu::RenderPipeline,
 }
 
-impl Material {
-    pub fn builder() -> MaterialBuilder {
+impl<'a> Material<'a> {
+    pub fn builder() -> MaterialBuilder<'a> {
         MaterialBuilder::new()
+    }
+
+    pub fn get_pipeline(&self) -> &wgpu::RenderPipeline {
+        &self.pipeline
     }
 }
 

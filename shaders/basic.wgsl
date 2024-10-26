@@ -1,6 +1,8 @@
 struct VertexInput {
     @location(0) position: vec3<f32>,
-    @location(1) uv: vec2<f32>,
+    @location(1) normal: vec3<f32>,
+    @location(2) color: vec3<f32>,
+    @location(3) texcoord: vec2<f32>,
 };
 
 struct VertexOutput {
@@ -14,7 +16,7 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.clip_position = vec4<f32>(model.position, 1.0);
-    out.uv = model.uv;
+    out.uv = model.texcoord;
     return out;
 }
 
@@ -26,5 +28,4 @@ var s_diffuse: sampler;
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     return textureSample(t_diffuse, s_diffuse, in.uv);
-    //return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }
