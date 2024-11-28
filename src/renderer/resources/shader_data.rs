@@ -16,6 +16,7 @@ pub struct ShaderCameraUniform {
     pub viewproj: Mat4,
     pub near: f32,
     pub far: f32,
+    pub _padding: [f32; 2],
 }
 
 #[repr(C)]

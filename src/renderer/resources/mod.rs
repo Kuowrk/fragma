@@ -1,8 +1,9 @@
+use super::resources::shader::Shader;
+use super::viewport::Viewport;
+use color_eyre::eyre::{OptionExt, Result};
+use image::{DynamicImage, GenericImage, ImageBuffer};
 use std::collections::HashMap;
 use wgpu::include_wgsl;
-use super::viewport::Viewport;
-use super::resources::shader::Shader;
-use color_eyre::eyre::{OptionExt, Result};
 
 pub mod mesh;
 pub mod vertex;
@@ -85,20 +86,26 @@ fn create_default_textures(
 ) -> Result<HashMap<String, texture::Texture>> {
     let mut result = HashMap::new();
 
-    result.insert("black".to_owned(), texture::Texture::new_from_bytes(
-        &[0, 0, 0, 255],
+    let mut black_image = image::RgbaImage::new(1, 1);
+    black_image.put_pixel(0, 0, image::Rgba([0, 0, 0, 255]));
+    result.insert("black".to_owned(), texture::Texture::new_from_image(
+        &black_image.into(),
         "black",
         device,
         queue,
         resources,
     )?);
-    result.insert("white".to_owned(), texture::Texture::new_from_bytes(
-        &[255, 255, 255, 255],
+
+    let mut white_image = image::RgbaImage::new(1, 1);
+    white_image.put_pixel(0, 0, image::Rgba([255, 255, 255, 255]));
+    result.insert("white".to_owned(), texture::Texture::new_from_image(
+        &white_image.into(),
         "white",
         device,
         queue,
         resources,
     )?);
+
     result.insert("tree".to_owned(), texture::Texture::new_from_bytes(
         include_bytes!("../../../assets/tree.png"),
         "tree",

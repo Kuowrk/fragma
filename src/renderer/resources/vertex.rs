@@ -1,5 +1,5 @@
 use glam::{Vec2, Vec3};
-use crate::app::renderer::resources::shader_data::ShaderVertex;
+use crate::renderer::resources::shader_data::ShaderVertex;
 
 #[derive(Debug)]
 pub struct Vertex {

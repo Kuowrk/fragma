@@ -1,15 +1,15 @@
 use color_eyre::eyre::{OptionExt, Result};
-use crate::app::renderer::resources::shader::Shader;
-use crate::app::renderer::resources::shader_data::{ShaderPushConstants, ShaderVertex};
-use crate::app::renderer::resources::vertex::Vertex;
-use crate::app::renderer::viewport::Viewport;
+use crate::renderer::resources::shader::Shader;
+use crate::renderer::resources::shader_data::{ShaderPushConstants, ShaderVertex};
+use crate::renderer::resources::vertex::Vertex;
+use crate::renderer::viewport::Viewport;
 
-pub struct Material<'a> {
+pub struct Material {
     pipeline: wgpu::RenderPipeline,
 }
 
-impl<'a> Material<'a> {
-    pub fn builder() -> MaterialBuilder<'a> {
+impl Material {
+    pub fn builder<'a>() -> MaterialBuilder<'a> {
         MaterialBuilder::new()
     }
 

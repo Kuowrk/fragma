@@ -1,5 +1,5 @@
 use color_eyre::eyre::{OptionExt, Result};
-use crate::app::renderer::resources::vertex::Vertex;
+use crate::renderer::resources::vertex::Vertex;
 use super::Resources;
 
 #[derive(Debug)]

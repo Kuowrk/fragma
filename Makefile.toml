@@ -1,5 +1,5 @@
 [env]
-RUST_LOG = "info"
+RUST_LOG = "warn"
 WGPU_BACKEND = "vulkan"
 RUST_BACKTRACE = 1
 

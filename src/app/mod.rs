@@ -1,5 +1,3 @@
-mod renderer;
-
 use color_eyre::eyre::Result;
 use winit::{
     event::*,
@@ -7,7 +5,7 @@ use winit::{
     keyboard::{Key, NamedKey},
     window::{Window, WindowBuilder},
 };
-use renderer::{Camera, Renderer, Scene};
+use crate::renderer::{Camera, Renderer, Scene};
 
 pub struct App {
     event_loop: EventLoop<()>,
@@ -68,12 +66,17 @@ impl App {
                     window_id,
                     ref event,
                 } if window_id == renderer.get_window().id() => match event {
-                    WindowEvent::CloseRequested => close_requested = true,
+                    WindowEvent::CloseRequested => {
+                        close_requested = true;
+                    }
                     WindowEvent::RedrawRequested => {
                         renderer.get_window().pre_present_notify();
                         match renderer.render(&self.scene, &self.camera) {
                             Ok(_) => {}
-                            Err(_) => close_requested = true,
+                            Err(report) => {
+                                log::error!("{report}");
+                                close_requested = true;
+                            },
                         };
                     }
                     WindowEvent::Resized(physical_size) => {
