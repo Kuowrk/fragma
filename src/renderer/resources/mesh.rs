@@ -35,23 +35,23 @@ impl Mesh {
 
     pub fn new_triangle() -> Self {
         let vertices = vec![
-            Vertex {
+            Vertex { // Bottom left
                 position: [-0.5, -0.5, 0.0].into(),
                 normal: [0.0, 0.0, 1.0].into(),
                 color: [1.0, 0.0, 0.0].into(),
                 texcoord: [0.0, 1.0].into(),
             },
-            Vertex {
+            Vertex { // Bottom right
                 position: [0.5, -0.5, 0.0].into(),
                 normal: [0.0, 0.0, 1.0].into(),
                 color: [0.0, 1.0, 0.0].into(),
-                texcoord: [0.5, 0.0].into(),
+                texcoord: [1.0, 1.0].into(),
             },
-            Vertex {
+            Vertex { // Top
                 position: [0.0, 0.5, 0.0].into(),
                 normal: [0.0, 0.0, 1.0].into(),
                 color: [0.0, 0.0, 1.0].into(),
-                texcoord: [1.0, 1.0].into(),
+                texcoord: [0.5, 0.0].into(),
             },
         ];
 
@@ -61,51 +61,37 @@ impl Mesh {
     }
 
     pub fn new_quad() -> Self {
-        // Clockwise winding order
         let vertices = vec![
-            // Top left triangle
-            Vertex {
-                position: [1.0, 1.0, 0.0].into(),
-                normal: [0.0, 1.0, 0.0].into(),
+            Vertex { // Top left
+                position: [-1.0, 1.0, 0.0].into(),
+                normal: [0.0, 0.0, 1.0].into(),
                 color: [1.0, 0.0, 0.0].into(),
                 texcoord: [0.0, 0.0].into(),
             },
-            Vertex {
+            Vertex { // Bottom left
                 position: [-1.0, -1.0, 0.0].into(),
-                normal: [0.0, 1.0, 0.0].into(),
+                normal: [0.0, 0.0, 1.0].into(),
                 color: [0.0, 1.0, 0.0].into(),
-                texcoord: [1.0, 0.0].into(),
-            },
-            Vertex {
-                position: [-1.0, 1.0, 0.0].into(),
-                normal: [0.0, 1.0, 0.0].into(),
-                color: [0.0, 0.0, 1.0].into(),
                 texcoord: [0.0, 1.0].into(),
             },
-            // Bottom right triangle
-            Vertex {
-                position: [-1.0, -1.0, 0.0].into(),
-                normal: [0.0, 1.0, 0.0].into(),
-                color: [0.0, 1.0, 0.0].into(),
-                texcoord: [1.0, 0.0].into(),
-            },
-            Vertex {
+            Vertex { // Top right
                 position: [1.0, 1.0, 0.0].into(),
-                normal: [0.0, 1.0, 0.0].into(),
-                color: [1.0, 0.0, 1.0].into(),
-                texcoord: [1.0, 1.0].into(),
-            },
-            Vertex {
-                position: [1.0, -1.0, 0.0].into(),
-                normal: [0.0, 1.0, 0.0].into(),
+                normal: [0.0, 0.0, 1.0].into(),
                 color: [0.0, 0.0, 1.0].into(),
-                texcoord: [0.0, 1.0].into(),
+                texcoord: [1.0, 0.0].into(),
+            },
+            Vertex { // Bottom right
+                position: [1.0, -1.0, 0.0].into(),
+                normal: [0.0, 0.0, 1.0].into(),
+                color: [1.0, 1.0, 0.0].into(),
+                texcoord: [1.0, 1.0].into(),
             },
         ];
 
+        // Counter-clockwise winding order
         let indices = vec![
             0, 1, 2, // Top left triangle
-            3, 4, 5, // Bottom right triangle
+            2, 1, 3, // Bottom right triangle
         ];
 
         Self::new(vertices, Some(indices))
