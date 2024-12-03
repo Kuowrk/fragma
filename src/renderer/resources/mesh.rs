@@ -1,8 +1,8 @@
-use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::AtomicU32;
 use super::vertex::Vertex;
 
 #[cfg(not(target_arch = "wasm32"))]
-static MESH_ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
+static MESH_ID_COUNTER: AtomicU32 = AtomicU32::new(0);
 
 // This is a workaround for the lack of atomic operations in WebAssembly.
 #[cfg(target_arch = "wasm32")]
@@ -12,7 +12,7 @@ static mut MESH_ID_COUNTER: u32 = 0;
 pub struct Mesh {
     pub vertices: Vec<Vertex>,
     pub indices: Option<Vec<u32>>,
-    id: usize,
+    id: u32,
 }
 
 impl Mesh {

@@ -1,6 +1,5 @@
 use wgpu::util::DeviceExt;
 use color_eyre::eyre::{eyre, Result};
-use wgpu::naga::back::spv::Capability::Shader;
 use super::mesh::Mesh;
 use super::shader_data::ShaderVertex;
 use super::vertex::Vertex;
