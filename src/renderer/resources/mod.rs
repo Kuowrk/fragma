@@ -29,8 +29,9 @@ impl Resources {
         let bind_group_layouts = create_default_bind_group_layouts(device);
         let samplers = create_default_samplers(device)?;
         let materials = create_default_materials(&bind_group_layouts, device, viewport)?;
+        let models = create_default_models(device)?;
         let mut result = Self {
-            models: HashMap::new(),
+            models,
             textures: HashMap::new(),
             materials,
             samplers,
