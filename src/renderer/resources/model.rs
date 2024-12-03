@@ -6,47 +6,49 @@ use super::vertex::Vertex;
 use super::super::viewport::Viewport;
 
 pub struct FullscreenQuad {
-    model: Model,
-    width: f32,
-    height: f32,
+    quad_model: Model,
+    // Image width and height determine the aspect ratio of an image to be displayed on the quad
+    image_width: f32,
+    image_height: f32,
 }
 
 impl FullscreenQuad {
     pub fn new(viewport: &Viewport, device: &wgpu::Device, queue: &wgpu::Queue) -> Result<Self> {
         let quad_mesh = Mesh::new_quad();
-        let model = Model::new(vec![quad_mesh], device)?;
-        let result = Self {
-            model,
-            width: 1.0,
-            height: 1.0,
+        let quad_model = Model::new(vec![quad_mesh], device)?;
+        let mut result = Self {
+            quad_model,
+            // Assume a square image by default
+            image_width: 1.0,
+            image_height: 1.0,
         };
         result.resize_to_viewport(viewport, device, queue);
         Ok(result)
     }
 
     pub fn draw(&self, render_pass: &mut wgpu::RenderPass) {
-        self.model.draw(render_pass);
+        self.quad_model.draw(render_pass);
     }
 
     pub fn resize_to_viewport(
-        &self,
+        &mut self, // This method mutates the quad model's vertex buffer
         viewport: &Viewport,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
     ) {
-        // Correct for image dimensions
-        let mut x = if self.width >= self.height {
+        // Correct for image aspect ratio
+        let mut x = if self.image_width >= self.image_height {
             1.0
         } else {
-            self.width / self.height
+            self.image_width / self.image_height
         };
-        let mut y = if self.width < self.height {
+        let mut y = if self.image_width < self.image_height {
             1.0
         } else {
-            self.height / self.width
+            self.image_height / self.image_width
         };
 
-        // Correct for viewport dimensions
+        // Correct for viewport aspect ratio
         let vp_size = viewport.get_size();
         if vp_size.width >= vp_size.height {
             y *= vp_size.width as f32 / vp_size.height as f32;
@@ -54,15 +56,18 @@ impl FullscreenQuad {
             x *= vp_size.height as f32 / vp_size.width as f32;
         };
 
-        // Update the background quad vertex buffer to match aspect ratio of background image
-        let vertices_merged  = self.model
+        // Update the vertices in the background quad vertex buffer to match the aspect ratio of background image.
+        // This means that the quad may not fill the entire viewport, but the image will be displayed with the correct aspect ratio.
+        // Note that only the vertex buffer gets mutated and not the vertices stored in the model themselves,
+        //   meaning the model vertices can be reused to mutate the vertex buffer at a later time.
+        let vertices_merged  = self.quad_model
             .get_vertices_merged()
             .iter()
             .map(|v| {
                 let p = v.position;
-                let mut result = v.as_shader_data();
-                result.position = glam::Vec3::new(p[0] * x, p[1] * y, p[2]);
-                result
+                let mut vertex = v.as_shader_data();
+                vertex.position = glam::Vec3::new(p[0] * x, p[1] * y, p[2]);
+                vertex
             })
             .collect::<Vec<ShaderVertex>>();
         let staging_buffer = device
@@ -79,7 +84,7 @@ impl FullscreenQuad {
         encoder.copy_buffer_to_buffer(
             &staging_buffer,
             0,
-            self.model.get_vertex_buffer(),
+            self.quad_model.get_vertex_buffer(),
             0,
             copy_size as wgpu::BufferAddress,
         );

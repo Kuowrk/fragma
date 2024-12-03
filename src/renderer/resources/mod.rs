@@ -4,6 +4,7 @@ use color_eyre::eyre::{OptionExt, Result};
 use image::{DynamicImage, GenericImage, ImageBuffer};
 use std::collections::HashMap;
 use wgpu::include_wgsl;
+use crate::renderer::resources::model::FullscreenQuad;
 
 pub mod mesh;
 pub mod vertex;
@@ -18,6 +19,7 @@ pub struct Resources {
     models: HashMap<String, model::Model>,
     textures: HashMap<String, texture::Texture>,
     materials: HashMap<String, material::Material>,
+    fullscreen_quad: FullscreenQuad,
 
     // wgpu resources
     samplers : HashMap<String, wgpu::Sampler>,
@@ -30,12 +32,14 @@ impl Resources {
         let samplers = create_default_samplers(device)?;
         let materials = create_default_materials(&bind_group_layouts, device, viewport)?;
         let models = create_default_models(device)?;
+        let fullscreen_quad = FullscreenQuad::new(viewport, device, queue)?;
         let mut result = Self {
             models,
             textures: HashMap::new(),
             materials,
             samplers,
             bind_group_layouts,
+            fullscreen_quad,
         };
         // Default textures depends on the bind group layouts and samplers
         result.textures = create_default_textures(device, queue, &result)?;
@@ -60,6 +64,14 @@ impl Resources {
 
     pub fn get_bind_group_layout(&self, name: &str) -> Result<&wgpu::BindGroupLayout> {
         self.bind_group_layouts.get(name).ok_or_eyre(format!("Failed to get bind group layout: {name}"))
+    }
+
+    pub fn get_fullscreen_quad(&self) -> &FullscreenQuad {
+        &self.fullscreen_quad
+    }
+
+    pub fn get_fullscreen_quad_mut(&mut self) -> &mut FullscreenQuad {
+        &mut self.fullscreen_quad
     }
 }
 

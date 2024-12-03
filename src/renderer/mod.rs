@@ -23,7 +23,6 @@ pub struct Renderer<'window> {
     device: wgpu::Device,
     queue: wgpu::Queue,
     resources: Resources,
-    bg_quad: FullscreenQuad,
 }
 
 impl<'window> Renderer<'window> {
@@ -79,14 +78,11 @@ impl<'window> Renderer<'window> {
 
         let resources = Resources::new(&device, &queue, &viewport)?;
 
-        let bg_quad = FullscreenQuad::new(&viewport, &device, &queue)?;
-
         Ok(Self {
             viewport,
             device,
             queue,
             resources,
-            bg_quad,
         })
     }
 
@@ -100,7 +96,9 @@ impl<'window> Renderer<'window> {
 
     pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
         self.viewport.resize(new_size, &self.device);
-        self.bg_quad.resize_to_viewport(&self.viewport, &self.device, &self.queue);
+        self.resources
+            .get_fullscreen_quad_mut()
+            .resize_to_viewport(&self.viewport, &self.device, &self.queue);
     }
 
     pub fn render(&mut self, scene: &Scene, camera: &Camera) -> Result<()> {
@@ -146,9 +144,10 @@ impl<'window> Renderer<'window> {
 
             let material = self.resources.get_material("basic")?;
             let texture = self.resources.get_texture("tree")?;
+            let model = self.resources.get_fullscreen_quad();
             render_pass.set_pipeline(material.get_pipeline());
             render_pass.set_bind_group(0, texture.get_bind_group(), &[]);
-            self.bg_quad.draw(&mut render_pass);
+            model.draw(&mut render_pass);
 
             let material = self.resources.get_material("basic")?;
             let texture = self.resources.get_texture("white")?;
