@@ -11,7 +11,7 @@ pub struct ShaderSceneUniform {
 
 /// Camera-related data
 #[repr(C)]
-#[derive(Debug, Copy, Clone, Pod, Zeroable)]
+#[derive(Debug, Default, Copy, Clone, Pod, Zeroable)]
 pub struct ShaderCameraUniform {
     pub viewproj: Mat4,
     pub near: f32,

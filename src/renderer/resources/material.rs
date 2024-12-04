@@ -1,8 +1,8 @@
 use color_eyre::eyre::{OptionExt, Result};
-use crate::renderer::resources::shader::Shader;
-use crate::renderer::resources::shader_data::{ShaderPushConstants, ShaderVertex};
-use crate::renderer::resources::vertex::Vertex;
-use crate::renderer::viewport::Viewport;
+
+use super::shader::Shader;
+use super::shader_data::{ShaderPushConstants, ShaderVertex};
+use super::super::viewport::Viewport;
 
 pub struct Material {
     pipeline: wgpu::RenderPipeline,

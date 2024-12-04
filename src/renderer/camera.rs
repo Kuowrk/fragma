@@ -1,6 +1,8 @@
 use std::f32::consts::PI;
 
 use glam::{Mat4, Vec2, Vec3, Vec4, Vec4Swizzles};
+use wgpu::util::DeviceExt;
+use crate::renderer::resources::shader_data::ShaderCameraUniform;
 
 pub struct Camera {
     position: Vec3,
@@ -12,10 +14,24 @@ pub struct Camera {
     near: f32,
     far: f32,
     pivot: Vec3,
+
+    camera_uniform: ShaderCameraUniform,
+    camera_uniform_buffer: wgpu::Buffer,
 }
 
-impl Default for Camera {
-    fn default() -> Self {
+impl Camera {
+    const DEFAULT_FOV_Y_DEG: f32 = 60.0;
+
+    pub fn new(device: &wgpu::Device) -> Self {
+        let camera_uniform = ShaderCameraUniform::default();
+        let camera_uniform_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Camera Uniform Buffer"),
+                contents: bytemuck::cast_slice(&[camera_uniform]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            }
+        );
+
         Self {
             position: Vec3::new(0.0, 0.0, 5.0),
             forward: Vec3::NEG_Z,
@@ -26,12 +42,10 @@ impl Default for Camera {
             near: 0.1,
             far: 100.0,
             pivot: Vec3::ZERO,
+            camera_uniform,
+            camera_uniform_buffer,
         }
     }
-}
-
-impl Camera {
-    const DEFAULT_FOV_Y_DEG: f32 = 60.0;
 
     pub fn set_position(&mut self, position: Vec3) {
         self.position = position;

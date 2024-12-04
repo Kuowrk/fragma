@@ -1,18 +1,20 @@
-use super::resources::shader::Shader;
-use super::viewport::Viewport;
-use color_eyre::eyre::{OptionExt, Result};
-use image::{DynamicImage, GenericImage, ImageBuffer};
-use std::collections::HashMap;
-use wgpu::include_wgsl;
-use crate::renderer::resources::model::FullscreenQuad;
-
 pub mod mesh;
 pub mod vertex;
 pub mod shader;
 pub mod model;
-mod material;
-mod texture;
+pub mod material;
+pub mod texture;
 pub mod shader_data;
+
+use color_eyre::eyre::{OptionExt, Result};
+use image::GenericImage;
+use std::collections::HashMap;
+use wgpu::include_wgsl;
+use wgpu::util::DeviceExt;
+use super::viewport::Viewport;
+use shader::Shader;
+use model::FullscreenQuad;
+use crate::renderer::resources::shader_data::ShaderCameraUniform;
 
 /// Global resources
 pub struct Resources {
