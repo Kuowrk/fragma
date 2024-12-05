@@ -12,10 +12,10 @@ struct VertexOutput {
 };
 
 struct ShaderCameraUniform {
-    @location(0) viewproj: mat4x4<f32>,
-    @location(1) near: f32,
-    @location(2) far: f32,
-    @location(3) _padding: vec2<f32>,
+    viewproj: mat4x4<f32>,
+    near: f32,
+    far: f32,
+    _padding: vec2<f32>,
 }
 
 //----------------------------------------------------------------------
@@ -25,13 +25,12 @@ var<uniform> camera: ShaderCameraUniform;
 
 @vertex
 fn vs_main(
-    model: VertexInput,
+    vertex: VertexInput,
 ) -> VertexOutput {
     var out: VertexOutput;
-    out.clip_position = camera.viewproj * vec4<f32>(model.position, 1.0);
-    //out.clip_position = vec4<f32>(model.position, 1.0);
-    out.uv = model.texcoord;
-    out.color = model.color;
+    out.clip_position = camera.viewproj * vec4<f32>(vertex.position, 1.0);
+    out.uv = vertex.texcoord;
+    out.color = vertex.color;
     return out;
 }
 

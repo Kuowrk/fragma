@@ -6,15 +6,6 @@ use crate::renderer::resources::Resources;
 use crate::renderer::viewport::Viewport;
 use super::resources::shader_data::ShaderCameraUniform;
 
-#[rustfmt::skip]
-pub const OPENGL_TO_WGPU_MATRIX: Mat4 = Mat4::from_cols(
-    Vec4::new(1.0, 0.0, 0.0, 0.0),
-    Vec4::new(0.0, 1.0, 0.0, 0.0),
-    Vec4::new(0.0, 0.0, 0.5, 0.0),
-    Vec4::new(0.0, 0.0, 0.5, 1.0),
-);
-
-
 pub struct Camera {
     position: Vec3,
     forward: Vec3,
@@ -31,7 +22,7 @@ pub struct Camera {
 }
 
 impl Camera {
-    const DEFAULT_FOV_Y_DEG: f32 = 60.0;
+    const DEFAULT_FOV_Y_DEG: f32 = 45.0;
 
     pub fn new(
         device: &wgpu::Device,
@@ -57,7 +48,7 @@ impl Camera {
             label: Some("Camera Bind Group"),
         });
 
-        let camera = Self {
+        let mut camera = Self {
             position: Vec3::new(0.0, 0.0, 5.0),
             forward: Vec3::NEG_Z,
             up: Vec3::Y,
@@ -144,7 +135,7 @@ impl Camera {
         viewport_width: f32,
         viewport_height: f32,
     ) -> Mat4 {
-        OPENGL_TO_WGPU_MATRIX * self.get_proj_mat(viewport_width, viewport_height) * self.get_view_mat()
+        self.get_proj_mat(viewport_width, viewport_height) * self.get_view_mat()
     }
 
     pub fn get_view_mat(&self) -> Mat4 {
@@ -152,14 +143,12 @@ impl Camera {
     }
 
     pub fn get_proj_mat(&self, viewport_width: f32, viewport_height: f32) -> Mat4 {
-        let mut proj = Mat4::perspective_rh(
+        Mat4::perspective_rh(
             self.fov_y_deg.to_radians(),
             viewport_width / viewport_height,
             self.near,
             self.far,
-        );
-        proj.y_axis.y *= -1.0;
-        proj
+        )
     }
 
     pub fn get_position(&self) -> Vec3 {
