@@ -14,6 +14,7 @@ use wgpu::util::DeviceExt;
 use super::viewport::Viewport;
 use shader::Shader;
 use model::FullscreenQuad;
+use crate::renderer::Camera;
 use crate::renderer::resources::shader_data::ShaderCameraUniform;
 
 /// Global resources
@@ -29,7 +30,11 @@ pub struct Resources {
 }
 
 impl Resources {
-    pub fn new(device: &wgpu::Device, queue: &wgpu::Queue, viewport: &Viewport) -> Result<Self> {
+    pub fn new(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        viewport: &Viewport,
+    ) -> Result<Self> {
         let bind_group_layouts = create_default_bind_group_layouts(device);
         let samplers = create_default_samplers(device)?;
         let materials = create_default_materials(&bind_group_layouts, device, viewport)?;
@@ -135,15 +140,18 @@ fn create_default_textures(
 fn create_default_materials(
     bind_group_layouts: &HashMap<String, wgpu::BindGroupLayout>,
     device: &wgpu::Device,
-    viewport: &Viewport
+    viewport: &Viewport,
 ) -> Result<HashMap<String, material::Material>> {
     let mut result = HashMap::new();
+
     result.insert("basic".to_owned(), material::Material::builder()
         .with_bind_group_layouts(&[
             bind_group_layouts.get("single texture").unwrap(),
+            bind_group_layouts.get("camera").unwrap(),
         ])
         .with_shader(Shader::new_from_descriptor(include_wgsl!("../../../shaders/basic.wgsl"), device))
         .build(device, viewport)?);
+
     Ok(result)
 }
 
@@ -166,6 +174,7 @@ fn create_default_samplers(
 
 fn create_default_bind_group_layouts(device: &wgpu::Device) -> HashMap<String, wgpu::BindGroupLayout> {
     let mut result = HashMap::new();
+
     result.insert("single texture".to_owned(), device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         entries: &[
             wgpu::BindGroupLayoutEntry {
@@ -187,6 +196,23 @@ fn create_default_bind_group_layouts(device: &wgpu::Device) -> HashMap<String, w
         ],
         label: Some("Single Texture Bind Group Layout"),
     }));
+
+    result.insert("camera".to_owned(), device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }
+        ],
+        label: Some("Camera Bind Group Layout"),
+    }));
+
     result
 }
 

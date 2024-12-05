@@ -5,13 +5,11 @@ use winit::{
     keyboard::{Key, NamedKey},
     window::{Window, WindowBuilder},
 };
-use crate::renderer::{Camera, Renderer, Scene};
+use crate::renderer::{Camera, Renderer};
 
 pub struct App {
     event_loop: EventLoop<()>,
     window: Window,
-    scene: Scene,
-    camera: Camera,
 }
 
 impl App {
@@ -49,13 +47,12 @@ impl App {
         Ok(Self {
             event_loop,
             window,
-            scene: Scene::default(),
-            camera: Camera::default(),
         })
     }
 
     pub async fn run(self) -> Result<()> {
         let mut renderer = Renderer::new(&self.window).await?;
+        let mut camera = renderer.create_camera();
 
         let mut request_redraws = true;
         let mut close_requested = false;
@@ -71,7 +68,7 @@ impl App {
                     }
                     WindowEvent::RedrawRequested => {
                         renderer.get_window().pre_present_notify();
-                        match renderer.render(&self.scene, &self.camera) {
+                        match renderer.render(&camera) {
                             Ok(_) => {}
                             Err(report) => {
                                 log::error!("{report}");

@@ -1,6 +1,5 @@
-use color_eyre::eyre::{OptionExt, Result};
-use crate::renderer::resources::vertex::Vertex;
 use super::Resources;
+use color_eyre::eyre::Result;
 
 #[derive(Debug)]
 pub struct Texture {

@@ -11,8 +11,7 @@ mod camera;
 mod scene;
 
 pub use camera::Camera;
-pub use scene::Scene;
-
+use scene::Scene;
 use viewport::Viewport;
 use resources::Resources;
 use resources::vertex::Vertex;
@@ -75,7 +74,6 @@ impl<'window> Renderer<'window> {
             a: 1.0,
         };
         let viewport = Viewport::new(window, background, surface, &adapter)?;
-
         let resources = Resources::new(&device, &queue, &viewport)?;
 
         Ok(Self {
@@ -101,7 +99,7 @@ impl<'window> Renderer<'window> {
             .resize_to_viewport(&self.viewport, &self.device, &self.queue);
     }
 
-    pub fn render(&mut self, scene: &Scene, camera: &Camera) -> Result<()> {
+    pub fn render(&mut self, camera: &Camera) -> Result<()> {
         let output = match self.viewport.get_current_texture() {
             Ok(output) => output,
             Err(wgpu::SurfaceError::Lost) => {
@@ -142,18 +140,22 @@ impl<'window> Renderer<'window> {
                 timestamp_writes: None,
             });
 
+            /*
             let material = self.resources.get_material("basic")?;
             let texture = self.resources.get_texture("tree")?;
             let model = self.resources.get_fullscreen_quad();
             render_pass.set_pipeline(material.get_pipeline());
             render_pass.set_bind_group(0, texture.get_bind_group(), &[]);
+            render_pass.set_bind_group(1, camera.get_bind_group(), &[]);
             model.draw(&mut render_pass);
+            */
 
             let material = self.resources.get_material("basic")?;
             let texture = self.resources.get_texture("white")?;
             let model = self.resources.get_model("triangle")?;
             render_pass.set_pipeline(material.get_pipeline());
             render_pass.set_bind_group(0, texture.get_bind_group(), &[]);
+            render_pass.set_bind_group(1, camera.get_bind_group(), &[]);
             model.draw(&mut render_pass);
         }
 
@@ -161,5 +163,9 @@ impl<'window> Renderer<'window> {
         output.present();
 
         Ok(())
+    }
+
+    pub fn create_camera(&self) -> Camera {
+        Camera::new(&self.device, &self.resources, &self.viewport)
     }
 }
