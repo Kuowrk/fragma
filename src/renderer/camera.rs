@@ -159,12 +159,12 @@ impl Camera {
 
     pub fn get_bind_group(
         &mut self,
+        viewport: &Viewport,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-        viewport: &Viewport,
     ) -> &wgpu::BindGroup {
         if self.dirty {
-            self.update_uniform_buffer(device, queue, viewport);
+            self.update_uniform_buffer(viewport, device, queue);
             self.dirty = false;
         }
         &self.camera_bind_group
@@ -172,9 +172,9 @@ impl Camera {
 
     fn update_uniform_buffer(
         &self,
+        viewport: &Viewport,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-        viewport: &Viewport
     ) {
         let camera_uniform_data = ShaderCameraUniform {
             viewproj: self.get_viewproj_mat(viewport),

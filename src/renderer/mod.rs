@@ -156,9 +156,9 @@ impl<'window> Renderer<'window> {
             render_pass.set_pipeline(material.get_pipeline());
             render_pass.set_bind_group(0, texture.get_bind_group(), &[]);
             render_pass.set_bind_group(1, camera.get_bind_group(
+                &self.viewport,
                 &self.device,
                 &self.queue,
-                &self.viewport
             ), &[]);
             model.draw(&mut render_pass);
         }
