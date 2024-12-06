@@ -36,8 +36,8 @@ impl App {
                 .and_then(|doc| {
                     let dst = doc.get_element_by_id("canvas-container")?;
                     let canvas = web_sys::Element::from(window.canvas()?);
-                    canvas.set_attribute("width", &window_size.width.to_string());
-                    canvas.set_attribute("height", &window_size.height.to_string());
+                    canvas.set_attribute("width", &window_size.width.to_string()).ok()?;
+                    canvas.set_attribute("height", &window_size.height.to_string()).ok()?;
                     dst.append_child(&canvas).ok()?;
                     Some(())
                 })
@@ -68,7 +68,7 @@ impl App {
                     }
                     WindowEvent::RedrawRequested => {
                         renderer.get_window().pre_present_notify();
-                        match renderer.render(&camera) {
+                        match renderer.render(&mut camera) {
                             Ok(_) => {}
                             Err(report) => {
                                 log::error!("{report}");

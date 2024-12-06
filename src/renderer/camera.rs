@@ -1,10 +1,10 @@
 use std::f32::consts::PI;
-
+use std::sync::Arc;
 use glam::{Mat4, Vec2, Vec3, Vec4, Vec4Swizzles};
 use wgpu::util::DeviceExt;
 use crate::renderer::resources::Resources;
 use crate::renderer::viewport::Viewport;
-use super::resources::shader_data::ShaderCameraUniform;
+use super::resources::shader_data::{ShaderCameraUniform, ShaderVertex};
 
 pub struct Camera {
     position: Vec3,
@@ -19,6 +19,7 @@ pub struct Camera {
 
     camera_uniform_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
+    dirty: bool,
 }
 
 impl Camera {
@@ -27,14 +28,13 @@ impl Camera {
     pub fn new(
         device: &wgpu::Device,
         resources: &Resources,
-        viewport: &Viewport
     ) -> Self {
         let camera_uniform_buffer = device.create_buffer(
             &wgpu::BufferDescriptor {
                 label: Some("Camera Uniform Buffer"),
                 size: size_of::<ShaderCameraUniform>() as wgpu::BufferAddress,
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                mapped_at_creation: true,
+                mapped_at_creation: false,
             }
         );
         let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -48,7 +48,7 @@ impl Camera {
             label: Some("Camera Bind Group"),
         });
 
-        let mut camera = Self {
+        Self {
             position: Vec3::new(0.0, 0.0, 5.0),
             forward: Vec3::NEG_Z,
             up: Vec3::Y,
@@ -60,23 +60,8 @@ impl Camera {
             pivot: Vec3::ZERO,
             camera_uniform_buffer,
             camera_bind_group,
-        };
-
-        // Populate the camera uniform buffer with the initial camera uniform data
-        let vp_size = viewport.get_size();
-        let camera_uniform_data = ShaderCameraUniform {
-            viewproj: camera.get_viewproj_mat(vp_size.width as f32, vp_size.height as f32),
-            near: camera.near,
-            far: camera.far,
-            _padding: [0.0; 2],
-        };
-        camera.camera_uniform_buffer
-            .slice(..)
-            .get_mapped_range_mut()
-            .copy_from_slice(bytemuck::cast_slice(&[camera_uniform_data]));
-        camera.camera_uniform_buffer.unmap();
-
-        camera
+            dirty: true,
+        }
     }
 
     pub fn set_position(&mut self, position: Vec3) {
@@ -92,12 +77,13 @@ impl Camera {
         self.forward = (target - self.position).normalize();
         self.right = self.forward.cross(self.world_up).normalize();
         self.up = self.right.cross(self.forward).normalize();
+        self.dirty = true;
     }
 
     pub fn mouse_zoom(&mut self, mouse_wheel_delta_y: f32) {
         let new_pos = self.position + self.forward * mouse_wheel_delta_y;
         if (new_pos - self.pivot).length() > self.near {
-            self.position = new_pos;
+            self.set_position(new_pos);
         }
     }
 
@@ -132,20 +118,24 @@ impl Camera {
 
     pub fn get_viewproj_mat(
         &self,
-        viewport_width: f32,
-        viewport_height: f32,
+        viewport: &Viewport,
     ) -> Mat4 {
-        self.get_proj_mat(viewport_width, viewport_height) * self.get_view_mat()
+        self.get_proj_mat(viewport) * self.get_view_mat()
     }
 
     pub fn get_view_mat(&self) -> Mat4 {
         Mat4::look_to_rh(self.position, self.forward, self.up)
     }
 
-    pub fn get_proj_mat(&self, viewport_width: f32, viewport_height: f32) -> Mat4 {
+    pub fn get_proj_mat(
+        &self,
+        viewport: &Viewport,
+    ) -> Mat4 {
+        let vp_size = viewport.get_size();
+        let aspect_ratio = vp_size.width as f32 / vp_size.height as f32;
         Mat4::perspective_rh(
             self.fov_y_deg.to_radians(),
-            viewport_width / viewport_height,
+            aspect_ratio,
             self.near,
             self.far,
         )
@@ -167,7 +157,49 @@ impl Camera {
         resources.get_bind_group_layout("camera").unwrap()
     }
 
-    pub fn get_bind_group(&self) -> &wgpu::BindGroup {
+    pub fn get_bind_group(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        viewport: &Viewport,
+    ) -> &wgpu::BindGroup {
+        if self.dirty {
+            self.update_uniform_buffer(device, queue, viewport);
+            self.dirty = false;
+        }
         &self.camera_bind_group
+    }
+
+    fn update_uniform_buffer(
+        &self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        viewport: &Viewport
+    ) {
+        let camera_uniform_data = ShaderCameraUniform {
+            viewproj: self.get_viewproj_mat(viewport),
+            near: self.near,
+            far: self.far,
+            _padding: [0.0; 2],
+        };
+
+        let staging_buffer = device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Camera Uniform Staging Buffer"),
+                contents: bytemuck::cast_slice(&[camera_uniform_data]),
+                usage: wgpu::BufferUsages::COPY_SRC,
+            });
+        let mut encoder = device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Camera Uniform Buffer Update Encoder"),
+            });
+        encoder.copy_buffer_to_buffer(
+            &staging_buffer,
+            0,
+            &self.camera_uniform_buffer,
+            0,
+            size_of::<ShaderCameraUniform>() as wgpu::BufferAddress,
+        );
+        queue.submit(Some(encoder.finish()));
     }
 }
