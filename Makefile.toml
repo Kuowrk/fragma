@@ -29,7 +29,7 @@ mkdir dist/
 mkdir dist/pkg/
 mv pkg/* dist/pkg/
 rmdir pkg
-cp index.html dist/
+cp public/index.html dist/
 '''
 
 [tasks.http-server]
