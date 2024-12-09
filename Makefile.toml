@@ -20,12 +20,21 @@ command = "cargo"
 args = ["check"]
 
 [tasks.web-build]
-command = "wasm-pack"
-args = ["build", "--target", "web"]
+script_runner = "@shell"
+script = '''
+wasm-pack build --target web
+mkdir -p dist/
+rm -rf dist/
+mkdir dist/
+mkdir dist/pkg/
+mv pkg/* dist/pkg/
+rmdir pkg
+cp index.html dist/
+'''
 
 [tasks.http-server]
 command = "python"
-args = ["-m", "http.server", "8800", "-d", "."]
+args = ["-m", "http.server", "8800", "-d", "./dist"]
 
 [tasks.web]
 description = "Build for web and start an HTTP server"
