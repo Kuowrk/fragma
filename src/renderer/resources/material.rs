@@ -57,13 +57,13 @@ impl<'a> MaterialBuilder<'a> {
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader.get_module(),
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 buffers: &[ShaderVertex::BUFFER_LAYOUT],
                 compilation_options: Default::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader.get_module(),
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: viewport.get_config().format,
                     blend: Some(wgpu::BlendState::REPLACE),
