@@ -80,42 +80,6 @@ impl Camera {
         self.dirty = true;
     }
 
-    pub fn mouse_zoom(&mut self, mouse_wheel_delta_y: f32) {
-        let new_pos = self.position + self.forward * mouse_wheel_delta_y;
-        if (new_pos - self.pivot).length() > self.near {
-            self.set_position(new_pos);
-        }
-    }
-
-    pub fn mouse_rotate(
-        &mut self,
-        prev_mouse_pos: Vec2,
-        curr_mouse_pos: Vec2,
-        viewport_width: f32,
-        viewport_height: f32,
-    ) {
-        // Get the homogeneous positions of the camera eye and pivot
-        let pos =
-            Vec4::new(self.position.x, self.position.y, self.position.z, 1.0);
-        let piv = Vec4::new(self.pivot.x, self.pivot.y, self.pivot.z, 1.0);
-
-        // Calculate the amount of rotation given the mouse movement
-        let delta_angle_x = 2.0 * PI / viewport_width; // Left to right = 2*PI = 360deg
-        let delta_angle_y = PI / viewport_height; // Top to bottom = PI = 180deg
-        let angle_x = (prev_mouse_pos.x - curr_mouse_pos.x) * delta_angle_x;
-        let angle_y = (prev_mouse_pos.y - curr_mouse_pos.y) * delta_angle_y;
-
-        // Rotate the camera around the pivot point on the up axis
-        let rot_x = Mat4::from_axis_angle(self.up, angle_x);
-        let pos = (rot_x * (pos - piv)) + piv;
-
-        // Rotate the camera around the pivot point on the right axis
-        let rot_y = Mat4::from_axis_angle(self.right, angle_y);
-        let pos = (rot_y * (pos - piv)) + piv;
-
-        self.set_position(pos.xyz());
-    }
-
     pub fn get_viewproj_mat(
         &self,
         viewport: &Viewport,
@@ -145,12 +109,28 @@ impl Camera {
         self.position
     }
 
+    pub fn get_forward(&self) -> Vec3 {
+        self.forward
+    }
+
+    pub fn get_up(&self) -> Vec3 {
+        self.up
+    }
+
+    pub fn get_right(&self) -> Vec3 {
+        self.right
+    }
+
     pub fn get_near(&self) -> f32 {
         self.near
     }
 
     pub fn get_far(&self) -> f32 {
         self.far
+    }
+
+    pub fn get_pivot(&self) -> Vec3 {
+        self.pivot
     }
 
     pub fn get_bind_group_layout<'a>(&self, resources: &'a Resources) -> &'a wgpu::BindGroupLayout {

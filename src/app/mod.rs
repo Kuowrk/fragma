@@ -1,11 +1,28 @@
+mod camera_controller;
+
 use color_eyre::eyre::Result;
+use glam::Vec2;
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
     keyboard::{Key, NamedKey},
     window::{Window, WindowBuilder},
 };
+use winit::dpi::PhysicalPosition;
+use winit::error::ExternalError;
+use winit::window::CursorGrabMode;
+use crate::app::camera_controller::CameraController;
 use crate::renderer::{Camera, Renderer};
+
+#[derive(Default)]
+struct InputState {
+    mouse_curr_pos: Vec2,
+    mouse_prev_pos: Vec2,
+    mouse_wheel_delta_y: f32,
+    mouse_left_down: bool,
+    mouse_right_down: bool,
+    mouse_right_down_pos: Vec2, // Position of the mouse when the right mouse button was pressed
+}
 
 pub struct App {
     event_loop: EventLoop<()>,
@@ -52,7 +69,8 @@ impl App {
 
     pub async fn run(self) -> Result<()> {
         let mut renderer = Renderer::new(&self.window).await?;
-        let mut camera = renderer.create_camera();
+        let mut camera_ctrl = CameraController::new(renderer.create_camera());
+        let mut input_state = InputState::default();
 
         let mut request_redraws = true;
         let mut close_requested = false;
@@ -68,7 +86,7 @@ impl App {
                     }
                     WindowEvent::RedrawRequested => {
                         renderer.get_window().pre_present_notify();
-                        match renderer.render(&mut camera) {
+                        match renderer.render(camera_ctrl.get_camera_mut()) {
                             Ok(_) => {}
                             Err(report) => {
                                 log::error!("{report}");
@@ -104,6 +122,79 @@ impl App {
                         }
                         _ => {}
                     },
+                    WindowEvent::MouseInput {
+                        state,
+                        button: MouseButton::Right,
+                        ..
+                    } => {
+                        match state {
+                            ElementState::Pressed => {
+                                renderer.get_window().set_cursor_grab(CursorGrabMode::Confined)
+                                    .or_else(|_| renderer.get_window().set_cursor_grab(CursorGrabMode::Locked))
+                                    .or_else(|e| {
+                                        log::error!("Failed to grab cursor: {e}");
+                                        Ok::<(), ExternalError>(())
+                                    })
+                                    .unwrap();
+                                renderer.get_window().set_cursor_visible(false);
+
+                                input_state.mouse_right_down = true;
+                                input_state.mouse_right_down_pos = input_state.mouse_curr_pos;
+                            }
+                            ElementState::Released => {
+                                renderer.get_window().set_cursor_grab(CursorGrabMode::None)
+                                    .or_else(|e| {
+                                        log::error!("Failed to release cursor: {e}");
+                                        Ok::<(), ExternalError>(())
+                                    })
+                                    .unwrap();
+                                renderer.get_window().set_cursor_visible(true);
+
+                                input_state.mouse_right_down = false;
+                                renderer
+                                    .get_window()
+                                    .set_cursor_position(PhysicalPosition::new(
+                                        input_state.mouse_right_down_pos.x as f64,
+                                        input_state.mouse_right_down_pos.y as f64
+                                    ))
+                                    .or_else(|e| {
+                                        log::error!("Failed to set cursor position: {e}");
+                                        Ok::<(), ExternalError>(())
+                                    })
+                                    .unwrap();
+                            }
+                        }
+                    }
+                    WindowEvent::CursorMoved {
+                        position,
+                        ..
+                    } => {
+                        input_state.mouse_curr_pos = Vec2::new(position.x as f32, position.y as f32);
+                        if input_state.mouse_right_down {
+                            let viewport_size = renderer.get_viewport_size();
+                            camera_ctrl.mouse_rotate(
+                                input_state.mouse_prev_pos,
+                                input_state.mouse_curr_pos,
+                                viewport_size.width as f32,
+                                viewport_size.height as f32,
+                            );
+                        }
+                        input_state.mouse_prev_pos = input_state.mouse_curr_pos;
+                    }
+                    WindowEvent::MouseWheel {
+                        delta,
+                        ..
+                    } => {
+                        match delta {
+                            MouseScrollDelta::LineDelta(_x, y) => {
+                                input_state.mouse_wheel_delta_y = *y;
+                            }
+                            MouseScrollDelta::PixelDelta(pos) => {
+                                input_state.mouse_wheel_delta_y = pos.y as f32;
+                            }
+                        }
+                        camera_ctrl.mouse_zoom(input_state.mouse_wheel_delta_y);
+                    }
                     _ => {}
                 },
                 Event::AboutToWait => {
