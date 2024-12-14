@@ -4,7 +4,7 @@ use wgpu::SurfaceTexture;
 use wgpu::util::DeviceExt;
 use winit::{dpi::PhysicalSize, window::Window};
 
-mod viewport;
+pub mod viewport;
 mod resources;
 mod frame;
 mod camera;
@@ -82,6 +82,14 @@ impl<'window> Renderer<'window> {
             queue,
             resources,
         })
+    }
+
+    pub fn get_viewport(&self) -> &Viewport<'window> {
+        &self.viewport
+    }
+
+    pub fn get_viewport_mut(&mut self) -> &mut Viewport<'window> {
+        &mut self.viewport
     }
 
     pub fn get_viewport_size(&self) -> PhysicalSize<u32> {
