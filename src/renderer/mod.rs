@@ -180,4 +180,8 @@ impl<'window> Renderer<'window> {
     pub fn create_camera(&self) -> Camera {
         Camera::new(&self.device, &self.resources)
     }
+
+    pub fn set_vsync(&mut self, enable: bool) {
+        self.viewport.set_vsync(enable, &self.device);
+    }
 }

@@ -32,7 +32,7 @@ impl<'window> Viewport<'window> {
             format: surface_format,
             width: size.width,
             height: size.height,
-            present_mode: surface_caps.present_modes[0],
+            present_mode: wgpu::PresentMode::AutoNoVsync,
             alpha_mode: surface_caps.alpha_modes[0],
             view_formats: vec![],
             desired_maximum_frame_latency: 2,
@@ -76,5 +76,14 @@ impl<'window> Viewport<'window> {
             self.config.height = new_size.height;
             self.surface.configure(device, &self.config);
         }
+    }
+
+    pub fn set_vsync(&mut self, enable: bool, device: &wgpu::Device) {
+        self.config.present_mode = if enable {
+            wgpu::PresentMode::AutoVsync
+        } else {
+            wgpu::PresentMode::AutoNoVsync
+        };
+        self.surface.configure(device, &self.config);
     }
 }

@@ -64,6 +64,8 @@ impl App {
         let mut camera_ctrl = CameraController::new(renderer.create_camera());
         let mut input_state = InputState::default();
 
+        renderer.set_vsync(true);
+
         let mut request_redraws = true;
         let mut close_requested = false;
 
