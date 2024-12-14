@@ -1,5 +1,5 @@
 use std::f32::consts::PI;
-use glam::{Mat4, Vec2, Vec4, Vec4Swizzles};
+use glam::{FloatExt, Mat4, Vec2, Vec3, Vec3Swizzles, Vec4, Vec4Swizzles};
 use winit::dpi::PhysicalPosition;
 use winit::error::ExternalError;
 use winit::window::CursorGrabMode;
@@ -9,12 +9,34 @@ use crate::renderer::viewport::Viewport;
 
 pub struct CameraController {
     camera: Camera,
+
+    rotation_sensitivity: f32,
+    rotation_smoothing_speed: f32,
+    rotation_desired_pivot_to_eye: Vec3,
+    rotation_current_pivot_to_eye: Vec3,
+
+    zoom_sensitivity: f32,
+    zoom_smoothing_speed: f32,
+    zoom_desired_distance: f32,
+    zoom_current_distance: f32,
 }
 
 impl CameraController {
     pub fn new(camera: Camera) -> Self {
+        let zoom_current_distance = camera.get_pivot().distance(camera.get_position());
+        let rotation_current_pivot_to_eye = camera.get_position() - camera.get_pivot();
         Self {
             camera,
+
+            rotation_sensitivity: 100.0,
+            rotation_smoothing_speed: 50.0,
+            rotation_desired_pivot_to_eye: rotation_current_pivot_to_eye,
+            rotation_current_pivot_to_eye,
+
+            zoom_sensitivity: 100.0,
+            zoom_smoothing_speed: 6.0,
+            zoom_desired_distance: zoom_current_distance,
+            zoom_current_distance,
         }
     }
 
@@ -50,7 +72,7 @@ impl CameraController {
 
         if input_state.mouse_right_down {
             let viewport_size = viewport.get_size();
-            self.mouse_rotate(
+            self.set_desired_rotation_pivot_to_eye(
                 input_state.mouse_prev_pos,
                 input_state.mouse_curr_pos,
                 viewport_size.width as f32,
@@ -64,19 +86,31 @@ impl CameraController {
         }
 
         if input_state.mouse_wheel_delta_y != 0.0 {
-            self.mouse_zoom(input_state.mouse_wheel_delta_y);
+            self.set_desired_zoom_distance(input_state.mouse_wheel_delta_y * delta_time * self.zoom_sensitivity);
         }
+
+        self.update_zoom_lerp(delta_time);
+        self.update_rotation_slerp(delta_time);
     }
 
-    fn mouse_zoom(&mut self, mouse_wheel_delta_y: f32) {
+    fn set_desired_zoom_distance(&mut self, delta: f32) {
         let mut cam = &mut self.camera;
-        let new_pos = cam.get_position() + cam.get_forward() * mouse_wheel_delta_y;
-        if (new_pos - cam.get_pivot()).length() > cam.get_near() {
-            cam.set_position(new_pos);
+        let new_pos = cam.get_position() + cam.get_forward() * delta;
+        let new_distance = cam.get_pivot().distance(new_pos);
+        if new_distance > cam.get_near() {
+            self.zoom_desired_distance = new_distance;
         }
     }
 
-    fn mouse_rotate(
+    fn update_zoom_lerp(&mut self, delta_time: f32) {
+        self.zoom_current_distance = self.zoom_current_distance.lerp(
+            self.zoom_desired_distance,
+            self.zoom_smoothing_speed * delta_time,
+        );
+        self.camera.set_position(self.camera.get_pivot() - self.camera.get_forward() * self.zoom_current_distance);
+    }
+
+    fn set_desired_rotation_pivot_to_eye(
         &mut self,
         prev_mouse_pos: Vec2,
         curr_mouse_pos: Vec2,
@@ -84,29 +118,34 @@ impl CameraController {
         viewport_height: f32,
         delta_time: f32,
     ) {
-        let cam = &mut self.camera;
-        let cam_pos = cam.get_position();
-        let cam_piv = cam.get_pivot();
-
-        // Get the homogeneous positions of the camera eye and pivot
-        let pos = Vec4::new(cam_pos.x, cam_pos.y, cam_pos.z, 1.0);
-        let piv = Vec4::new(cam_piv.x, cam_piv.y, cam_piv.z, 1.0);
+        let cam = &self.camera;
 
         // Calculate the amount of rotation given the mouse movement
         let delta_angle_x = 2.0 * PI / viewport_width; // Left to right = 2*PI = 360deg
         let delta_angle_y = PI / viewport_height; // Top to bottom = PI = 180deg
-        let angle_x = (prev_mouse_pos.x - curr_mouse_pos.x) * delta_angle_x;
-        let angle_y = (prev_mouse_pos.y - curr_mouse_pos.y) * delta_angle_y;
+        let angle_x = (prev_mouse_pos.x - curr_mouse_pos.x) * delta_angle_x * delta_time * self.rotation_sensitivity;
+        let angle_y = (prev_mouse_pos.y - curr_mouse_pos.y) * delta_angle_y * delta_time * self.rotation_sensitivity;
 
         // Rotate the camera around the pivot point on the up axis
         let rot_x = Mat4::from_axis_angle(cam.get_up(), angle_x);
-        let pos = (rot_x * (pos - piv)) + piv;
 
         // Rotate the camera around the pivot point on the right axis
         let rot_y = Mat4::from_axis_angle(cam.get_right(), angle_y);
-        let pos = (rot_y * (pos - piv)) + piv;
 
-        cam.set_position(pos.xyz());
+        // Set the desired pivot to eye vector
+        let v = &self.rotation_current_pivot_to_eye;
+        let curr_piv_to_eye = Vec4::new(v.x, v.y, v.z, 1.0);
+        self.rotation_desired_pivot_to_eye = (rot_x * rot_y * curr_piv_to_eye).xyz();
+    }
+
+    fn update_rotation_slerp(&mut self, delta_time: f32) {
+        self.rotation_current_pivot_to_eye = slerp(
+            self.rotation_current_pivot_to_eye,
+            self.rotation_desired_pivot_to_eye,
+            self.rotation_smoothing_speed * delta_time
+        ) * self.zoom_current_distance;
+
+        self.camera.set_position(self.camera.get_pivot() + self.rotation_current_pivot_to_eye);
     }
 
     fn set_mouse_pos(
@@ -136,4 +175,32 @@ impl CameraController {
             || pos.y > viewport.get_size().height as f32 - border_px as f32
     }
 
+}
+
+#[allow(dead_code)]
+fn slerp_2d(a: Vec2, b: Vec2, t: f32) -> Vec2 {
+    slerp(Vec3::new(a.x, a.y, 0.0), Vec3::new(b.x, b.y, 0.0), t).xy()
+}
+
+#[allow(dead_code)]
+fn slerp(a: Vec3, b: Vec3, t: f32) -> Vec3 {
+    // Ensure the vectors are normalized
+    let a = a.normalize();
+    let b = b.normalize();
+
+    // Compute the angle between a and b
+    let dot = a.dot(b).clamp(-1.0, 1.0); // Clamp to avoid numerical errors
+    let theta = dot.acos();
+
+    // If the angle is very small, fallback to LERP (avoids division by 0)
+    if theta.abs() < 1e-6 {
+        return a.lerp(b, t).normalize();
+    }
+
+    // SLERP formula
+    let sin_theta = theta.sin();
+    let a_part = (((1.0 - t) * theta).sin() / sin_theta) * a;
+    let b_part = ((t * theta).sin() / sin_theta) * b;
+
+    a_part + b_part
 }
