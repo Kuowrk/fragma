@@ -28,7 +28,7 @@ rm -rf dist/
 mkdir dist/
 mkdir dist/pkg/
 mv pkg/* dist/pkg/
-rmdir pkg
+rm -rf pkg/
 cp public/index.html dist/
 '''
 
