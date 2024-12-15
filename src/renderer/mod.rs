@@ -5,10 +5,10 @@ use winit::{dpi::PhysicalSize, window::Window};
 
 pub mod viewport;
 pub mod utils;
+pub mod scene;
 mod resources;
 //mod frame;
 mod camera;
-mod scene;
 mod render_object;
 
 pub use camera::Camera;

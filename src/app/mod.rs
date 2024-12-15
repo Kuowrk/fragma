@@ -16,6 +16,7 @@ use winit::{
 use crate::app::camera_controller::CameraController;
 use crate::app::input_state::InputState;
 use crate::renderer::Renderer;
+use crate::renderer::scene::Scene;
 
 pub struct App {
     event_loop: EventLoop<()>,
@@ -66,8 +67,8 @@ impl App {
         let mut scene = renderer.create_scene();
         let mut input_state = InputState::default();
 
-        renderer.set_vsync(false);
-        scene.add_render_object("basic", "tree", "triangle")?;
+        Self::configure_renderer(&mut renderer)?;
+        Self::configure_scene(&mut scene)?;
 
         let mut request_redraws = true;
         let mut close_requested = false;
@@ -151,6 +152,16 @@ impl App {
             input_state.reset_frame();
         })?;
 
+        Ok(())
+    }
+
+    fn configure_renderer(renderer: &mut Renderer) -> Result<()> {
+        renderer.set_vsync(false);
+        Ok(())
+    }
+
+    fn configure_scene(scene: &mut Scene) -> Result<()> {
+        scene.add_render_object("basic", "tree", "triangle")?;
         Ok(())
     }
 }
