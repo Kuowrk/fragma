@@ -2,7 +2,6 @@ use std::f32::consts::PI;
 use glam::{FloatExt, Mat4, Vec2, Vec3, Vec3Swizzles, Vec4, Vec4Swizzles};
 use winit::dpi::PhysicalPosition;
 use winit::error::ExternalError;
-use winit::window::CursorGrabMode;
 use crate::app::InputState;
 use crate::renderer::{utils, Camera};
 use crate::renderer::viewport::Viewport;
@@ -108,7 +107,7 @@ impl CameraController {
             return;
         }
 
-        let mut cam = &mut self.camera;
+        let cam = &self.camera;
         let cam_near = cam.get_near();
         let cam_far = cam.get_far();
 

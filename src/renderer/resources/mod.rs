@@ -6,16 +6,13 @@ pub mod material;
 pub mod texture;
 pub mod shader_data;
 
-use color_eyre::eyre::{OptionExt, Result};
-use image::GenericImage;
+use color_eyre::eyre::{OptionExt, Result, eyre};
 use std::collections::HashMap;
 use wgpu::include_wgsl;
-use wgpu::util::DeviceExt;
 use super::viewport::Viewport;
 use shader::Shader;
 use model::FullscreenQuad;
-use crate::renderer::Camera;
-use crate::renderer::resources::shader_data::ShaderCameraUniform;
+use crate::renderer::render_object::RenderObject;
 
 /// Global resources
 pub struct Resources {
@@ -51,6 +48,33 @@ impl Resources {
         // Default textures depends on the bind group layouts and samplers
         result.textures = create_default_textures(device, queue, &result)?;
         Ok(result)
+    }
+
+    pub fn create_render_object(
+        &self,
+        material_name: &str,
+        texture_name: &str,
+        model_name: &str,
+    ) -> Result<RenderObject> {
+        let material_exists = self.materials.contains_key(material_name);
+        let texture_exists = self.textures.contains_key(texture_name);
+        let model_exists = self.models.contains_key(model_name);
+
+        if !material_exists {
+            return Err(eyre!("Material not found: {}", material_name));
+        }
+        if !texture_exists {
+            return Err(eyre!("Texture not found: {}", texture_name));
+        }
+        if !model_exists {
+            return Err(eyre!("Model not found: {}", model_name));
+        }
+
+        Ok(RenderObject::new(
+            material_name.to_owned(),
+            texture_name.to_owned(),
+            model_name.to_owned(),
+        ))
     }
 
     pub fn get_model(&self, name: &str) -> Result<&model::Model> {

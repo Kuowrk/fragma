@@ -1,11 +1,9 @@
-use std::f32::consts::PI;
-use std::sync::Arc;
-use glam::{Mat4, Vec2, Vec3, Vec4, Vec4Swizzles};
-use wgpu::util::DeviceExt;
+use super::resources::shader_data::ShaderCameraUniform;
 use crate::renderer::resources::Resources;
 use crate::renderer::utils;
 use crate::renderer::viewport::Viewport;
-use super::resources::shader_data::{ShaderCameraUniform, ShaderVertex};
+use glam::{Mat4, Vec3};
+use wgpu::util::DeviceExt;
 
 pub struct Camera {
     position: Vec3,

@@ -78,7 +78,7 @@ impl<'window> Viewport<'window> {
         }
     }
 
-    pub fn set_vsync(&mut self, enable: bool, device: &wgpu::Device) {
+    pub fn set_vsync(&mut self, enable: bool) {
         self.config.present_mode = if enable {
             wgpu::PresentMode::AutoVsync
         } else {

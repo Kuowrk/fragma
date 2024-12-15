@@ -6,20 +6,16 @@ use std::time::Instant;
 #[cfg(target_arch = "wasm32")]
 use web_time::Instant;
 
-use color_eyre::eyre::{OptionExt, Result};
-use glam::Vec2;
+use color_eyre::eyre::Result;
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
     keyboard::{Key, NamedKey},
     window::{Window, WindowBuilder},
 };
-use winit::dpi::PhysicalPosition;
-use winit::error::ExternalError;
-use winit::window::CursorGrabMode;
 use crate::app::camera_controller::CameraController;
 use crate::app::input_state::InputState;
-use crate::renderer::{Camera, Renderer};
+use crate::renderer::Renderer;
 
 pub struct App {
     event_loop: EventLoop<()>,
@@ -67,9 +63,11 @@ impl App {
     pub async fn run(self) -> Result<()> {
         let mut renderer = Renderer::new(&self.window).await?;
         let mut camera_ctrl = CameraController::new(renderer.create_camera());
+        let mut scene = renderer.create_scene();
         let mut input_state = InputState::default();
 
         renderer.set_vsync(false);
+        scene.add_render_object("basic", "tree", "triangle")?;
 
         let mut request_redraws = true;
         let mut close_requested = false;
@@ -95,7 +93,10 @@ impl App {
                         }
                         WindowEvent::RedrawRequested => {
                             renderer.get_window().pre_present_notify();
-                            match renderer.render(camera_ctrl.get_camera_mut()) {
+                            match renderer.render(
+                                camera_ctrl.get_camera_mut(),
+                                &scene,
+                            ) {
                                 Ok(_) => {}
                                 Err(report) => {
                                     log::error!("{report}");

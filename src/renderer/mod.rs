@@ -1,28 +1,26 @@
+use std::cell::RefCell;
+use std::rc::Rc;
 use color_eyre::eyre::{eyre, OptionExt, Result};
-use image::{Rgba, RgbaImage};
-use wgpu::SurfaceTexture;
-use wgpu::util::DeviceExt;
 use winit::{dpi::PhysicalSize, window::Window};
 
 pub mod viewport;
 pub mod utils;
 mod resources;
-mod frame;
+//mod frame;
 mod camera;
 mod scene;
+mod render_object;
 
 pub use camera::Camera;
 use scene::Scene;
 use viewport::Viewport;
 use resources::Resources;
-use resources::vertex::Vertex;
-use resources::model::FullscreenQuad;
 
 pub struct Renderer<'window> {
     viewport: Viewport<'window>,
     device: wgpu::Device,
     queue: wgpu::Queue,
-    resources: Resources,
+    resources: Rc<RefCell<Resources>>,
 }
 
 impl<'window> Renderer<'window> {
@@ -75,7 +73,7 @@ impl<'window> Renderer<'window> {
             a: 1.0,
         };
         let viewport = Viewport::new(window, background, surface, &adapter)?;
-        let resources = Resources::new(&device, &queue, &viewport)?;
+        let resources = Rc::new(RefCell::new(Resources::new(&device, &queue, &viewport)?));
 
         Ok(Self {
             viewport,
@@ -104,11 +102,12 @@ impl<'window> Renderer<'window> {
     pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
         self.viewport.resize(new_size, &self.device);
         self.resources
+            .borrow_mut()
             .get_fullscreen_quad_mut()
             .resize_to_viewport(&self.viewport, &self.device, &self.queue);
     }
 
-    pub fn render(&mut self, camera: &mut Camera) -> Result<()> {
+    pub fn render(&mut self, camera: &mut Camera, scene: &Scene) -> Result<()> {
         let output = match self.viewport.get_current_texture() {
             Ok(output) => output,
             Err(wgpu::SurfaceError::Lost) => {
@@ -149,27 +148,16 @@ impl<'window> Renderer<'window> {
                 timestamp_writes: None,
             });
 
-            /*
-            let material = self.resources.get_material("basic")?;
-            let texture = self.resources.get_texture("tree")?;
-            let model = self.resources.get_fullscreen_quad();
-            render_pass.set_pipeline(material.get_pipeline());
-            render_pass.set_bind_group(0, texture.get_bind_group(), &[]);
-            render_pass.set_bind_group(1, camera.get_bind_group(), &[]);
-            model.draw(&mut render_pass);
-            */
-
-            let material = self.resources.get_material("basic")?;
-            let texture = self.resources.get_texture("tree")?;
-            let model = self.resources.get_model("triangle")?;
-            render_pass.set_pipeline(material.get_pipeline());
-            render_pass.set_bind_group(0, texture.get_bind_group(), &[]);
-            render_pass.set_bind_group(1, camera.get_bind_group(
-                &self.viewport,
-                &self.device,
-                &self.queue,
-            ), &[]);
-            model.draw(&mut render_pass);
+            for render_object in scene.get_render_objects() {
+                render_object.draw(
+                    &mut render_pass,
+                    camera,
+                    &self.resources.borrow(),
+                    &self.viewport,
+                    &self.device,
+                    &self.queue,
+                )?;
+            }
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
@@ -179,10 +167,14 @@ impl<'window> Renderer<'window> {
     }
 
     pub fn create_camera(&self) -> Camera {
-        Camera::new(&self.device, &self.resources)
+        Camera::new(&self.device, &self.resources.borrow())
+    }
+
+    pub fn create_scene(&self) -> Scene {
+        Scene::new(self.resources.clone())
     }
 
     pub fn set_vsync(&mut self, enable: bool) {
-        self.viewport.set_vsync(enable, &self.device);
+        self.viewport.set_vsync(enable);
     }
 }
