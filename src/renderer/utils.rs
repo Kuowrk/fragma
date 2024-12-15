@@ -1,18 +1,17 @@
 use glam::Vec3;
 
-/// Assume forward is normalized
 pub fn calculate_pitch(forward: Vec3) -> f32 {
+    let forward = forward.normalize();
     forward.y.clamp(-1.0, 1.0).asin()
 }
 
-/// Assume forward is normalized
 pub fn calculate_yaw(forward: Vec3) -> f32 {
+    let forward = forward.normalize();
     forward.z.atan2(forward.x)
 }
 
-/// Assume forward and up are normalized
 pub fn calculate_roll(forward: Vec3, up: Vec3) -> f32 {
-    let right = forward.cross(up);
+    let right = forward.cross(up).normalize();
     right.y.atan2(right.x)
 }
 

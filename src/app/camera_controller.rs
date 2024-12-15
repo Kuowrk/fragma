@@ -154,7 +154,6 @@ impl CameraController {
             self.rotation_desired_pivot_to_eye = new_piv_to_eye;
         }
         else {
-            log::error!("Pitch angle limit reached");
             // Clamp the pitch angle
             let pitch = self.rotation_max_angle_y * new_piv_to_eye.y.signum();
             let yaw = utils::calculate_yaw(new_piv_to_eye);

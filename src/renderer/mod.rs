@@ -160,7 +160,7 @@ impl<'window> Renderer<'window> {
             */
 
             let material = self.resources.get_material("basic")?;
-            let texture = self.resources.get_texture("white")?;
+            let texture = self.resources.get_texture("tree")?;
             let model = self.resources.get_model("triangle")?;
             render_pass.set_pipeline(material.get_pipeline());
             render_pass.set_bind_group(0, texture.get_bind_group(), &[]);
