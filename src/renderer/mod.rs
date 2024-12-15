@@ -24,7 +24,6 @@ pub struct Renderer<'window> {
 }
 
 impl<'window> Renderer<'window> {
-    /// Create a new renderer with all the state required to call `render_scene()`
     pub async fn new(window: &'window Window) -> Result<Renderer<'window>> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             #[cfg(not(target_arch = "wasm32"))]

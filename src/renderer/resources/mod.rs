@@ -8,17 +8,19 @@ pub mod shader_data;
 
 use color_eyre::eyre::{OptionExt, Result, eyre};
 use std::collections::HashMap;
+use std::path::Path;
 use wgpu::include_wgsl;
 use super::viewport::Viewport;
 use shader::Shader;
 use model::FullscreenQuad;
 use crate::renderer::render_object::RenderObject;
+use crate::renderer::resources::material::render_material::RenderMaterial;
 
 /// Global resources
 pub struct Resources {
     models: HashMap<String, model::Model>,
     textures: HashMap<String, texture::Texture>,
-    materials: HashMap<String, material::Material>,
+    materials: HashMap<String, RenderMaterial>,
     fullscreen_quad: FullscreenQuad,
 
     // wgpu resources
@@ -85,7 +87,7 @@ impl Resources {
         self.textures.get(name).ok_or_eyre(format!("Failed to get texture: {name}"))
     }
 
-    pub fn get_material(&self, name: &str) -> Result<&material::Material> {
+    pub fn get_material(&self, name: &str) -> Result<&RenderMaterial> {
         self.materials.get(name).ok_or_eyre(format!("Failed to get material: {name}"))
     }
 
@@ -165,15 +167,15 @@ fn create_default_materials(
     bind_group_layouts: &HashMap<String, wgpu::BindGroupLayout>,
     device: &wgpu::Device,
     viewport: &Viewport,
-) -> Result<HashMap<String, material::Material>> {
+) -> Result<HashMap<String, RenderMaterial>> {
     let mut result = HashMap::new();
 
-    result.insert("basic".to_owned(), material::Material::builder()
+    result.insert("basic".to_owned(), RenderMaterial::builder()
         .with_bind_group_layouts(&[
             bind_group_layouts.get("single texture").unwrap(),
             bind_group_layouts.get("camera").unwrap(),
         ])
-        .with_shader(Shader::new_from_descriptor(include_wgsl!("../../../shaders/basic.wgsl"), device))
+        .with_shader(Shader::new_from_file("basic.wgsl", device)?)
         .build(device, viewport)?);
 
     Ok(result)

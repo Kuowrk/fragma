@@ -1,16 +1,15 @@
-use color_eyre::eyre::{OptionExt, Result};
+use color_eyre::eyre::OptionExt;
+use crate::renderer::resources::shader::Shader;
+use crate::renderer::resources::shader_data::{ShaderPushConstants, ShaderVertex};
+use crate::renderer::viewport::Viewport;
 
-use super::shader::Shader;
-use super::shader_data::{ShaderPushConstants, ShaderVertex};
-use super::super::viewport::Viewport;
-
-pub struct Material {
+pub struct RenderMaterial {
     pipeline: wgpu::RenderPipeline,
 }
 
-impl Material {
-    pub fn builder<'a>() -> MaterialBuilder<'a> {
-        MaterialBuilder::new()
+impl RenderMaterial {
+    pub fn builder<'a>() -> RenderMaterialBuilder<'a> {
+        RenderMaterialBuilder::new()
     }
 
     pub fn get_pipeline(&self) -> &wgpu::RenderPipeline {
@@ -18,14 +17,14 @@ impl Material {
     }
 }
 
-pub struct MaterialBuilder<'a> {
+pub struct RenderMaterialBuilder<'a> {
     shader: Option<Shader>,
     bind_group_layouts: Vec<&'a wgpu::BindGroupLayout>,
     cull_mode: Option<wgpu::Face>,
 }
 
-impl<'a> MaterialBuilder<'a> {
-    pub fn new() -> Self {
+impl<'a> RenderMaterialBuilder<'a> {
+    fn new() -> Self {
         Self {
             shader: None,
             bind_group_layouts: Vec::new(),
@@ -48,7 +47,7 @@ impl<'a> MaterialBuilder<'a> {
         self
     }
 
-    pub fn build(mut self, device: &wgpu::Device, viewport: &Viewport) -> Result<Material> {
+    pub fn build(mut self, device: &wgpu::Device, viewport: &Viewport) -> color_eyre::Result<RenderMaterial> {
         let shader = self.shader.take().ok_or_eyre("No shader provided")?;
         let pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -96,7 +95,7 @@ impl<'a> MaterialBuilder<'a> {
             multiview: None,
             cache: None,
         });
-        Ok(Material {
+        Ok(RenderMaterial {
             pipeline,
         })
     }
