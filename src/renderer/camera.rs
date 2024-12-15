@@ -3,6 +3,7 @@ use std::sync::Arc;
 use glam::{Mat4, Vec2, Vec3, Vec4, Vec4Swizzles};
 use wgpu::util::DeviceExt;
 use crate::renderer::resources::Resources;
+use crate::renderer::utils;
 use crate::renderer::viewport::Viewport;
 use super::resources::shader_data::{ShaderCameraUniform, ShaderVertex};
 
@@ -131,6 +132,14 @@ impl Camera {
 
     pub fn get_pivot(&self) -> Vec3 {
         self.pivot
+    }
+
+    pub fn get_world_up(&self) -> Vec3 {
+        self.world_up
+    }
+
+    pub fn get_pitch(&self) -> f32 {
+        utils::calculate_pitch(self.forward)
     }
 
     pub fn get_bind_group_layout<'a>(&self, resources: &'a Resources) -> &'a wgpu::BindGroupLayout {

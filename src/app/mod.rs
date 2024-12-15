@@ -1,7 +1,12 @@
 mod camera_controller;
 mod input_state;
 
-use color_eyre::eyre::Result;
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
+#[cfg(target_arch = "wasm32")]
+use web_time::Instant;
+
+use color_eyre::eyre::{OptionExt, Result};
 use glam::Vec2;
 use winit::{
     event::*,
@@ -64,12 +69,12 @@ impl App {
         let mut camera_ctrl = CameraController::new(renderer.create_camera());
         let mut input_state = InputState::default();
 
-        renderer.set_vsync(true);
+        renderer.set_vsync(false);
 
         let mut request_redraws = true;
         let mut close_requested = false;
 
-        let mut last_frame_time = std::time::Instant::now();
+        let mut prev_frame_time = Instant::now();
         let mut delta_time = 0.0;
 
         self.event_loop.run(move |event, elwt| {
@@ -78,9 +83,9 @@ impl App {
                     window_id,
                     ref event,
                 } if window_id == renderer.get_window().id() => {
-                    let curr_frame_time = std::time::Instant::now();
-                    delta_time = (curr_frame_time - last_frame_time).as_secs_f32();
-                    last_frame_time = curr_frame_time;
+                    let curr_frame_time = Instant::now();
+                    delta_time = curr_frame_time.duration_since(prev_frame_time).as_secs_f32();
+                    prev_frame_time = curr_frame_time;
 
                     input_state.process_window_events(event);
 

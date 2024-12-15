@@ -84,6 +84,5 @@ impl<'window> Viewport<'window> {
         } else {
             wgpu::PresentMode::AutoNoVsync
         };
-        self.surface.configure(device, &self.config);
     }
 }

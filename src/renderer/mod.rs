@@ -5,6 +5,7 @@ use wgpu::util::DeviceExt;
 use winit::{dpi::PhysicalSize, window::Window};
 
 pub mod viewport;
+pub mod utils;
 mod resources;
 mod frame;
 mod camera;

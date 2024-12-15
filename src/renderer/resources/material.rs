@@ -21,6 +21,7 @@ impl Material {
 pub struct MaterialBuilder<'a> {
     shader: Option<Shader>,
     bind_group_layouts: Vec<&'a wgpu::BindGroupLayout>,
+    cull_mode: Option<wgpu::Face>,
 }
 
 impl<'a> MaterialBuilder<'a> {
@@ -28,6 +29,7 @@ impl<'a> MaterialBuilder<'a> {
         Self {
             shader: None,
             bind_group_layouts: Vec::new(),
+            cull_mode: None,
         }
     }
 
@@ -38,6 +40,11 @@ impl<'a> MaterialBuilder<'a> {
 
     pub fn with_bind_group_layouts(mut self, bind_group_layouts: &[&'a wgpu::BindGroupLayout]) -> Self {
         self.bind_group_layouts = bind_group_layouts.into();
+        self
+    }
+
+    pub fn with_cull_mode(mut self, cull_mode: Option<wgpu::Face>) -> Self {
+        self.cull_mode = cull_mode;
         self
     }
 
@@ -75,8 +82,7 @@ impl<'a> MaterialBuilder<'a> {
                 topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
-                //cull_mode: Some(wgpu::Face::Back),
-                cull_mode: None,
+                cull_mode: self.cull_mode,
                 polygon_mode: wgpu::PolygonMode::Fill,
                 unclipped_depth: false,
                 conservative: false,

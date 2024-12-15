@@ -53,10 +53,10 @@ impl InputState {
             } => {
                 match delta {
                     MouseScrollDelta::LineDelta(_x, y) => {
-                        self.mouse_wheel_delta_y = *y;
+                        self.mouse_wheel_delta_y = y.signum();
                     }
                     MouseScrollDelta::PixelDelta(pos) => {
-                        self.mouse_wheel_delta_y = pos.y as f32;
+                        self.mouse_wheel_delta_y = pos.y.signum() as f32;
                     }
                 }
             }
