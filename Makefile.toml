@@ -23,13 +23,18 @@ args = ["check"]
 script_runner = "@shell"
 script = '''
 wasm-pack build --target web
+
 mkdir -p dist/
 rm -rf dist/
 mkdir dist/
+
 mkdir dist/pkg/
 mv pkg/* dist/pkg/
 rm -rf pkg/
 cp public/index.html dist/
+
+mkdir dist/shaders/
+cp shaders/* dist/shaders/
 '''
 
 [tasks.http-server]

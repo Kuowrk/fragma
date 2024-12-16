@@ -32,8 +32,8 @@ impl<'window> Renderer<'window> {
                 .unwrap_or(wgpu::Backends::PRIMARY),
             #[cfg(target_arch = "wasm32")]
             // NOTE: WebGPU is supported, but does not yet work in release version of Firefox
-            //backends: wgpu::Backends::BROWSER_WEBGPU,
-            backends: wgpu::Backends::GL,
+            backends: wgpu::Backends::BROWSER_WEBGPU,
+            //backends: wgpu::Backends::GL,
             ..Default::default()
         });
 
@@ -73,7 +73,7 @@ impl<'window> Renderer<'window> {
             a: 1.0,
         };
         let viewport = Viewport::new(window, background, surface, &adapter)?;
-        let resources = Rc::new(RefCell::new(Resources::new(&device, &queue, &viewport)?));
+        let resources = Rc::new(RefCell::new(Resources::new(&device, &queue, &viewport).await?));
 
         Ok(Self {
             viewport,

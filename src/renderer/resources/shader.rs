@@ -14,11 +14,16 @@ impl Shader {
         }
     }
 
-    pub fn new_from_file(filename: &str, device: &wgpu::Device) -> Result<Self> {
-        let filepath = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("shaders")
-            .join(filename);
-        let source = std::fs::read_to_string(filepath)?;
+    pub async fn new_from_file(filename: &str, device: &wgpu::Device) -> Result<Self> {
+        #[cfg(not(target_arch = "wasm32"))]
+        let source = {
+            let filepath = Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("shaders")
+                .join(filename);
+            std::fs::read_to_string(filepath)?
+        };
+        #[cfg(target_arch = "wasm32")]
+        let source = fetch_shader_file(filename).await?;
         let desc = wgpu::ShaderModuleDescriptor {
             label: Some(filename),
             source: wgpu::ShaderSource::Wgsl(source.into()),
@@ -28,5 +33,25 @@ impl Shader {
 
     pub fn get_module(&self) -> &wgpu::ShaderModule {
         &self.module
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+async fn fetch_shader_file(filename: &str) -> Result<String> {
+    let base_url = get_base_url();
+    let url = format!("{}/shaders/{}", base_url, filename);
+    log::info!("Fetching shader from: {}", url);
+    let response = reqwest::get(&url).await?;
+    Ok(response.text().await?)
+}
+
+#[cfg(target_arch = "wasm32")]
+fn get_base_url() -> String {
+    let window = web_sys::window().expect("No window");
+    let document = window.document().expect("No document");
+    if let Some(base_uri) = document.base_uri() {
+        base_uri
+    } else {
+        document.location().origin().expect("No origin")
     }
 }

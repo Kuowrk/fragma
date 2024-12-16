@@ -34,15 +34,15 @@ pub struct Resources {
 }
 
 impl Resources {
-    pub fn new(
+    pub async fn new(
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-        viewport: &Viewport,
+        viewport: &Viewport<'_>,
     ) -> Result<Self> {
         let bind_group_layouts = create_default_bind_group_layouts(device);
         let samplers = create_default_samplers(device)?;
-        let render_materials = create_default_render_materials(&bind_group_layouts, device, viewport)?;
-        let compute_materials = create_default_compute_materials(&bind_group_layouts, device)?;
+        let render_materials = create_default_render_materials(&bind_group_layouts, device, viewport).await?;
+        let compute_materials = create_default_compute_materials(&bind_group_layouts, device).await?;
         let models = create_default_models(device)?;
         let fullscreen_quad = FullscreenQuad::new(viewport, device, queue)?;
         let mut result = Self {
@@ -198,10 +198,10 @@ fn create_default_textures(
     Ok(result)
 }
 
-fn create_default_render_materials(
+async fn create_default_render_materials(
     bind_group_layouts: &HashMap<String, wgpu::BindGroupLayout>,
     device: &wgpu::Device,
-    viewport: &Viewport,
+    viewport: &Viewport<'_>,
 ) -> Result<HashMap<String, RenderMaterial>> {
     let mut result = HashMap::new();
 
@@ -210,13 +210,13 @@ fn create_default_render_materials(
             bind_group_layouts.get(SINGLE_TEXTURE_BIND_GROUP_LAYOUT_NAME).unwrap(),
             bind_group_layouts.get(CAMERA_BIND_GROUP_LAYOUT_NAME).unwrap(),
         ])
-        .with_shader(Shader::new_from_file("basic.wgsl", device)?)
+        .with_shader(Shader::new_from_file("basic.wgsl", device).await?)
         .build(device, viewport)?);
 
     Ok(result)
 }
 
-fn create_default_compute_materials(
+async fn create_default_compute_materials(
     bind_group_layouts: &HashMap<String, wgpu::BindGroupLayout>,
     device: &wgpu::Device,
 ) -> Result<HashMap<String, ComputeMaterial>> {
@@ -226,7 +226,7 @@ fn create_default_compute_materials(
         .with_bind_group_layouts(&[
             bind_group_layouts.get("compute storage").unwrap(),
         ])
-        .with_shader(Shader::new_from_file("basic_compute.wgsl", device)?)
+        .with_shader(Shader::new_from_file("basic_compute.wgsl", device).await?)
         .build(device)?);
 
     Ok(result)
