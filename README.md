@@ -18,4 +18,4 @@ Stands for "Fragmentmakerrenderengine".
 ### Web
 
 - `cargo make web`
-- navigate to `localhost:8800` in a browser
+- navigate to `localhost:8800` in a browser that supports WebGPU
