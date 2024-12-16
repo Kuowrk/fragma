@@ -90,8 +90,59 @@ impl Texture {
         })
     }
 
+    pub fn new_compute_storage(
+        label: &str,
+        width: u32,
+        height: u32,
+        device: &wgpu::Device,
+        resources: &Resources,
+    ) -> Result<Self> {
+        let size = wgpu::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        };
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::STORAGE_BINDING | wgpu::TextureUsages::COPY_SRC,
+            label: Some(label),
+            view_formats: &[],
+        });
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let layout = resources.get_bind_group_layout("compute storage")?;
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some(&format!("{label} Bind Group")),
+            layout: &layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&view),
+                },
+            ],
+        });
+
+        Ok(Self {
+            texture,
+            view,
+            bind_group,
+            width,
+            height,
+        })
+    }
 
     pub fn get_bind_group(&self) -> &wgpu::BindGroup {
         &self.bind_group
+    }
+
+    pub fn get_width(&self) -> u32 {
+        self.width
+    }
+
+    pub fn get_height(&self) -> u32 {
+        self.height
     }
 }

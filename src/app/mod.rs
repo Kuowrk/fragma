@@ -162,6 +162,7 @@ impl App {
 
     fn configure_scene(scene: &mut Scene) -> Result<()> {
         scene.add_render_object("basic", "tree", "triangle")?;
+        scene.add_compute_object("basic compute")?;
         Ok(())
     }
 }

@@ -1,4 +1,5 @@
 use color_eyre::eyre::OptionExt;
+use color_eyre::Result;
 use crate::renderer::resources::shader::Shader;
 use crate::renderer::resources::shader_data::{ShaderPushConstants, ShaderVertex};
 use crate::renderer::viewport::Viewport;
@@ -47,11 +48,11 @@ impl<'a> RenderMaterialBuilder<'a> {
         self
     }
 
-    pub fn build(mut self, device: &wgpu::Device, viewport: &Viewport) -> color_eyre::Result<RenderMaterial> {
+    pub fn build(mut self, device: &wgpu::Device, viewport: &Viewport) -> Result<RenderMaterial> {
         let shader = self.shader.take().ok_or_eyre("No shader provided")?;
         let pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Pipeline Layout"),
+                label: Some("Render Pipeline Layout"),
                 bind_group_layouts: &self.bind_group_layouts,
                 push_constant_ranges: &[wgpu::PushConstantRange {
                     stages: wgpu::ShaderStages::VERTEX,
@@ -59,7 +60,7 @@ impl<'a> RenderMaterialBuilder<'a> {
                 }],
             });
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Pipeline"),
+            label: Some("Render Pipeline"),
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader.get_module(),

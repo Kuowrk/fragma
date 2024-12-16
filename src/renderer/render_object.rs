@@ -31,7 +31,7 @@ impl RenderObject {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
     ) -> Result<()> {
-        let material = resources.get_material(&self.material_name)?;
+        let material = resources.get_render_material(&self.material_name)?;
         let texture = resources.get_texture(&self.texture_name)?;
         let model = resources.get_model(&self.model_name)?;
 

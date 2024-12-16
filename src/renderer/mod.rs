@@ -10,6 +10,7 @@ mod resources;
 //mod frame;
 mod camera;
 mod render_object;
+mod compute_object;
 
 pub use camera::Camera;
 use scene::Scene;
@@ -128,8 +129,22 @@ impl<'window> Renderer<'window> {
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Render Encoder"),
+                label: Some("Command Encoder"),
             });
+
+        {
+            let mut compute_pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+                label: Some("Compute Pass"),
+                timestamp_writes: None,
+            });
+
+            for compute_object in scene.get_compute_objects() {
+                compute_object.dispatch(
+                    &mut compute_pass,
+                    &self.resources.borrow(),
+                )?;
+            }
+        }
 
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {

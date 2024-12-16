@@ -8,19 +8,24 @@ pub mod shader_data;
 
 use color_eyre::eyre::{OptionExt, Result, eyre};
 use std::collections::HashMap;
-use std::path::Path;
-use wgpu::include_wgsl;
 use super::viewport::Viewport;
 use shader::Shader;
 use model::FullscreenQuad;
+use crate::renderer::compute_object::ComputeObject;
 use crate::renderer::render_object::RenderObject;
+use crate::renderer::resources::material::compute_material::ComputeMaterial;
 use crate::renderer::resources::material::render_material::RenderMaterial;
+
+const SINGLE_TEXTURE_BIND_GROUP_LAYOUT_NAME: &str = "single texture";
+const CAMERA_BIND_GROUP_LAYOUT_NAME: &str = "camera";
+const COMPUTE_STORAGE_TEXTURE_NAME: &str = "compute storage";
 
 /// Global resources
 pub struct Resources {
     models: HashMap<String, model::Model>,
     textures: HashMap<String, texture::Texture>,
-    materials: HashMap<String, RenderMaterial>,
+    render_materials: HashMap<String, RenderMaterial>,
+    compute_materials: HashMap<String, ComputeMaterial>,
     fullscreen_quad: FullscreenQuad,
 
     // wgpu resources
@@ -36,13 +41,15 @@ impl Resources {
     ) -> Result<Self> {
         let bind_group_layouts = create_default_bind_group_layouts(device);
         let samplers = create_default_samplers(device)?;
-        let materials = create_default_materials(&bind_group_layouts, device, viewport)?;
+        let render_materials = create_default_render_materials(&bind_group_layouts, device, viewport)?;
+        let compute_materials = create_default_compute_materials(&bind_group_layouts, device)?;
         let models = create_default_models(device)?;
         let fullscreen_quad = FullscreenQuad::new(viewport, device, queue)?;
         let mut result = Self {
             models,
             textures: HashMap::new(),
-            materials,
+            render_materials,
+            compute_materials,
             samplers,
             bind_group_layouts,
             fullscreen_quad,
@@ -58,7 +65,7 @@ impl Resources {
         texture_name: &str,
         model_name: &str,
     ) -> Result<RenderObject> {
-        let material_exists = self.materials.contains_key(material_name);
+        let material_exists = self.render_materials.contains_key(material_name);
         let texture_exists = self.textures.contains_key(texture_name);
         let model_exists = self.models.contains_key(model_name);
 
@@ -79,6 +86,22 @@ impl Resources {
         ))
     }
 
+    pub fn create_compute_object(
+        &self,
+        material_name: &str,
+    ) -> Result<ComputeObject> {
+        let material_exists = self.compute_materials.contains_key(material_name);
+
+        if !material_exists {
+            return Err(eyre!("Material not found: {}", material_name));
+        }
+
+        Ok(ComputeObject::new(
+            material_name.to_owned(),
+            COMPUTE_STORAGE_TEXTURE_NAME.to_owned(),
+        ))
+    }
+
     pub fn get_model(&self, name: &str) -> Result<&model::Model> {
         self.models.get(name).ok_or_eyre(format!("Failed to get model: {name}"))
     }
@@ -87,8 +110,12 @@ impl Resources {
         self.textures.get(name).ok_or_eyre(format!("Failed to get texture: {name}"))
     }
 
-    pub fn get_material(&self, name: &str) -> Result<&RenderMaterial> {
-        self.materials.get(name).ok_or_eyre(format!("Failed to get material: {name}"))
+    pub fn get_render_material(&self, name: &str) -> Result<&RenderMaterial> {
+        self.render_materials.get(name).ok_or_eyre(format!("Failed to get render material: {name}"))
+    }
+
+    pub fn get_compute_material(&self, name: &str) -> Result<&ComputeMaterial> {
+        self.compute_materials.get(name).ok_or_eyre(format!("Failed to get compute material: {name}"))
     }
 
     pub fn get_sampler(&self, name: &str) -> Result<&wgpu::Sampler> {
@@ -160,10 +187,18 @@ fn create_default_textures(
         resources,
     )?);
 
+    result.insert(COMPUTE_STORAGE_TEXTURE_NAME.to_owned(), texture::Texture::new_compute_storage(
+        COMPUTE_STORAGE_TEXTURE_NAME,
+        1,
+        1,
+        device,
+        resources,
+    )?);
+
     Ok(result)
 }
 
-fn create_default_materials(
+fn create_default_render_materials(
     bind_group_layouts: &HashMap<String, wgpu::BindGroupLayout>,
     device: &wgpu::Device,
     viewport: &Viewport,
@@ -172,11 +207,27 @@ fn create_default_materials(
 
     result.insert("basic".to_owned(), RenderMaterial::builder()
         .with_bind_group_layouts(&[
-            bind_group_layouts.get("single texture").unwrap(),
-            bind_group_layouts.get("camera").unwrap(),
+            bind_group_layouts.get(SINGLE_TEXTURE_BIND_GROUP_LAYOUT_NAME).unwrap(),
+            bind_group_layouts.get(CAMERA_BIND_GROUP_LAYOUT_NAME).unwrap(),
         ])
         .with_shader(Shader::new_from_file("basic.wgsl", device)?)
         .build(device, viewport)?);
+
+    Ok(result)
+}
+
+fn create_default_compute_materials(
+    bind_group_layouts: &HashMap<String, wgpu::BindGroupLayout>,
+    device: &wgpu::Device,
+) -> Result<HashMap<String, ComputeMaterial>> {
+    let mut result = HashMap::new();
+
+    result.insert("basic compute".to_owned(), ComputeMaterial::builder()
+        .with_bind_group_layouts(&[
+            bind_group_layouts.get("compute storage").unwrap(),
+        ])
+        .with_shader(Shader::new_from_file("basic_compute.wgsl", device)?)
+        .build(device)?);
 
     Ok(result)
 }
@@ -201,7 +252,7 @@ fn create_default_samplers(
 fn create_default_bind_group_layouts(device: &wgpu::Device) -> HashMap<String, wgpu::BindGroupLayout> {
     let mut result = HashMap::new();
 
-    result.insert("single texture".to_owned(), device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+    result.insert(SINGLE_TEXTURE_BIND_GROUP_LAYOUT_NAME.to_owned(), device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         entries: &[
             wgpu::BindGroupLayoutEntry {
                 binding: 0,
@@ -223,7 +274,7 @@ fn create_default_bind_group_layouts(device: &wgpu::Device) -> HashMap<String, w
         label: Some("Single Texture Bind Group Layout"),
     }));
 
-    result.insert("camera".to_owned(), device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+    result.insert(CAMERA_BIND_GROUP_LAYOUT_NAME.to_owned(), device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         entries: &[
             wgpu::BindGroupLayoutEntry {
                 binding: 0,
@@ -237,6 +288,22 @@ fn create_default_bind_group_layouts(device: &wgpu::Device) -> HashMap<String, w
             }
         ],
         label: Some("Camera Bind Group Layout"),
+    }));
+
+    result.insert(COMPUTE_STORAGE_TEXTURE_NAME.to_owned(), device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::COMPUTE,
+                ty: wgpu::BindingType::StorageTexture {
+                    access: wgpu::StorageTextureAccess::WriteOnly,
+                    format: wgpu::TextureFormat::Rgba8Unorm,
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                },
+                count: None,
+            }
+        ],
+        label: Some("Compute Storage Bind Group Layout"),
     }));
 
     result
