@@ -33,7 +33,6 @@ impl<'window> Renderer<'window> {
             #[cfg(target_arch = "wasm32")]
             // NOTE: WebGPU is supported, but does not yet work in release version of Firefox
             backends: wgpu::Backends::BROWSER_WEBGPU,
-            //backends: wgpu::Backends::GL,
             ..Default::default()
         });
 

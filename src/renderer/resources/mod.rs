@@ -55,7 +55,7 @@ impl Resources {
             fullscreen_quad,
         };
         // Default textures depends on the bind group layouts and samplers
-        result.textures = create_default_textures(device, queue, &result)?;
+        result.textures = create_default_textures(viewport, device, queue, &result)?;
         Ok(result)
     }
 
@@ -153,6 +153,7 @@ fn create_default_models(
 }
 
 fn create_default_textures(
+    viewport: &Viewport,
     device: &wgpu::Device,
     queue: &wgpu::Queue,
     resources: &Resources,
@@ -187,10 +188,11 @@ fn create_default_textures(
         resources,
     )?);
 
+    let vp_size = viewport.get_size();
     result.insert(COMPUTE_STORAGE_TEXTURE_NAME.to_owned(), texture::Texture::new_compute_storage(
         COMPUTE_STORAGE_TEXTURE_NAME,
-        1,
-        1,
+        vp_size.width,
+        vp_size.height,
         device,
         resources,
     )?);
