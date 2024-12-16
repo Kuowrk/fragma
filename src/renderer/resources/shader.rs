@@ -1,6 +1,9 @@
 use color_eyre::Result;
 use std::path::Path;
 
+#[cfg(target_arch = "wasm32")]
+use reqwest::Url;
+
 #[derive(Debug)]
 pub struct Shader {
     module: wgpu::ShaderModule,
@@ -39,19 +42,22 @@ impl Shader {
 #[cfg(target_arch = "wasm32")]
 async fn fetch_shader_file(filename: &str) -> Result<String> {
     let base_url = get_base_url();
-    let url = format!("{}/shaders/{}", base_url, filename);
+    let url = base_url.join(&format!("shaders/{}", filename))?;
     log::info!("Fetching shader from: {}", url);
-    let response = reqwest::get(&url).await?;
+    let response = reqwest::get(url.as_str()).await?;
     Ok(response.text().await?)
 }
 
 #[cfg(target_arch = "wasm32")]
-fn get_base_url() -> String {
+fn get_base_url() -> Url {
+    use winit::platform::web::WindowExtWebSys;
     let window = web_sys::window().expect("No window");
     let document = window.document().expect("No document");
-    if let Some(base_uri) = document.base_uri() {
+    let base_url = if let Ok(Some(base_uri)) = document.base_uri() {
         base_uri
     } else {
-        document.location().origin().expect("No origin")
-    }
+        window.location().origin().expect("No origin")
+    };
+    Url::parse(&base_url)
+        .expect(&format!("Failed to parse base URL: {}", base_url))
 }

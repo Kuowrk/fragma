@@ -22,7 +22,6 @@ env_logger = "0.11.5"
 glam = {  version = "0.29.0", features = ["bytemuck"]}
 log = "0.4.22"
 pollster = "0.4.0"
-reqwest = "0.12.9"
 wgpu = "23.0.1"
 winit = { version = "0.29.15", features = ["rwh_05"] }
 
@@ -34,8 +33,9 @@ features = ["jpeg", "png"]
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.7"
 console_log = "1.0"
+reqwest = "0.12.9"
 wgpu = { version = "23.0.1", features = ["webgl"]}
 wasm-bindgen = "0.2.95"
 wasm-bindgen-futures = "0.4.45"
-web-sys = { version = "0.3.72", features = ["Document", "Window", "Element"]}
+web-sys = { version = "0.3.72", features = ["Document", "Window", "Element", "Location"]}
 web-time = "1.1.0"
