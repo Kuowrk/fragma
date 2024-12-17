@@ -68,7 +68,7 @@ impl App {
         let mut input_state = InputState::default();
 
         Self::configure_renderer(&mut renderer)?;
-        Self::configure_scene(&mut scene)?;
+        Self::configure_scene(&mut scene, &renderer)?;
 
         let mut request_redraws = true;
         let mut close_requested = false;
@@ -113,6 +113,10 @@ impl App {
                             new_size.width = (new_size.width as f64 * scale_factor) as u32;
                             new_size.height = (new_size.height as f64 * scale_factor) as u32;
                             renderer.resize(new_size);
+                            scene.resize_compute_output_textures(new_size.width, new_size.height)
+                                .unwrap_or_else(|report| {
+                                    log::error!("{report}");
+                                });
                         }
                         WindowEvent::KeyboardInput {
                             event:
@@ -160,9 +164,12 @@ impl App {
         Ok(())
     }
 
-    fn configure_scene(scene: &mut Scene) -> Result<()> {
+    fn configure_scene(scene: &mut Scene, renderer: &Renderer) -> Result<()> {
         scene.add_render_object("basic", "tree", "triangle")?;
-        scene.add_compute_object("basic compute")?;
+        let vp_size = renderer.get_viewport_size();
+        scene.add_compute_object_with_output_texture(
+            "basic compute", vp_size.width, vp_size.height
+        )?;
         Ok(())
     }
 }

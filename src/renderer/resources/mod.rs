@@ -18,7 +18,7 @@ use crate::renderer::resources::material::render_material::RenderMaterial;
 
 const SINGLE_TEXTURE_BIND_GROUP_LAYOUT_NAME: &str = "single texture";
 const CAMERA_BIND_GROUP_LAYOUT_NAME: &str = "camera";
-const COMPUTE_STORAGE_TEXTURE_NAME: &str = "compute storage";
+const COMPUTE_STORAGE_BIND_GROUP_LAYOUT_NAME: &str = "compute storage";
 
 /// Global resources
 pub struct Resources {
@@ -55,7 +55,7 @@ impl Resources {
             fullscreen_quad,
         };
         // Default textures depends on the bind group layouts and samplers
-        result.textures = create_default_textures(viewport, device, queue, &result)?;
+        result.textures = create_default_textures(device, queue, &result)?;
         Ok(result)
     }
 
@@ -86,9 +86,12 @@ impl Resources {
         ))
     }
 
-    pub fn create_compute_object(
+    pub fn create_compute_object_with_output_texture(
         &self,
         material_name: &str,
+        texture_width: u32,
+        texture_height: u32,
+        device: &wgpu::Device,
     ) -> Result<ComputeObject> {
         let material_exists = self.compute_materials.contains_key(material_name);
 
@@ -96,10 +99,13 @@ impl Resources {
             return Err(eyre!("Material not found: {}", material_name));
         }
 
-        Ok(ComputeObject::new(
-            material_name.to_owned(),
-            COMPUTE_STORAGE_TEXTURE_NAME.to_owned(),
-        ))
+        ComputeObject::new_with_output_texture(
+            "basic compute".to_owned(),
+            texture_width,
+            texture_height,
+            device,
+            self,
+        )
     }
 
     pub fn get_model(&self, name: &str) -> Result<&model::Model> {
@@ -153,7 +159,6 @@ fn create_default_models(
 }
 
 fn create_default_textures(
-    viewport: &Viewport,
     device: &wgpu::Device,
     queue: &wgpu::Queue,
     resources: &Resources,
@@ -185,15 +190,6 @@ fn create_default_textures(
         "tree",
         device,
         queue,
-        resources,
-    )?);
-
-    let vp_size = viewport.get_size();
-    result.insert(COMPUTE_STORAGE_TEXTURE_NAME.to_owned(), texture::Texture::new_compute_storage(
-        COMPUTE_STORAGE_TEXTURE_NAME,
-        vp_size.width,
-        vp_size.height,
-        device,
         resources,
     )?);
 
@@ -292,7 +288,7 @@ fn create_default_bind_group_layouts(device: &wgpu::Device) -> HashMap<String, w
         label: Some("Camera Bind Group Layout"),
     }));
 
-    result.insert(COMPUTE_STORAGE_TEXTURE_NAME.to_owned(), device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+    result.insert(COMPUTE_STORAGE_BIND_GROUP_LAYOUT_NAME.to_owned(), device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         entries: &[
             wgpu::BindGroupLayoutEntry {
                 binding: 0,

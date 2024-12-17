@@ -1,4 +1,4 @@
-use super::Resources;
+use super::{Resources, COMPUTE_STORAGE_BIND_GROUP_LAYOUT_NAME};
 use color_eyre::eyre::Result;
 
 #[derive(Debug)]
@@ -113,7 +113,7 @@ impl Texture {
             view_formats: &[],
         });
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let layout = resources.get_bind_group_layout("compute storage")?;
+        let layout = resources.get_bind_group_layout(COMPUTE_STORAGE_BIND_GROUP_LAYOUT_NAME)?;
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some(&format!("{label} Bind Group")),
             layout: &layout,
@@ -144,5 +144,9 @@ impl Texture {
 
     pub fn get_height(&self) -> u32 {
         self.height
+    }
+
+    pub fn get_texture(&self) -> &wgpu::Texture {
+        &self.texture
     }
 }

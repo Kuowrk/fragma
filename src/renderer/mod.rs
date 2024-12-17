@@ -19,8 +19,8 @@ use resources::Resources;
 
 pub struct Renderer<'window> {
     viewport: Viewport<'window>,
-    device: wgpu::Device,
-    queue: wgpu::Queue,
+    device: Rc<wgpu::Device>,
+    queue: Rc<wgpu::Queue>,
     resources: Rc<RefCell<Resources>>,
 }
 
@@ -76,8 +76,8 @@ impl<'window> Renderer<'window> {
 
         Ok(Self {
             viewport,
-            device,
-            queue,
+            device: Rc::new(device),
+            queue: Rc::new(queue),
             resources,
         })
     }
@@ -98,7 +98,10 @@ impl<'window> Renderer<'window> {
         self.viewport.get_window()
     }
 
-    pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
+    pub fn resize(
+        &mut self,
+        new_size: PhysicalSize<u32>,
+    ) {
         self.viewport.resize(new_size, &self.device);
         self.resources
             .borrow_mut()
@@ -122,9 +125,6 @@ impl<'window> Renderer<'window> {
             },
         };
 
-        let view = output
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -145,14 +145,40 @@ impl<'window> Renderer<'window> {
             }
         }
 
+        let compute_texture = scene.get_compute_objects()[0].get_output_texture().unwrap();
+        let copy_size = wgpu::Extent3d {
+            width: output.texture.width().min(compute_texture.get_width()),
+            height: output.texture.height().min(compute_texture.get_height()),
+            depth_or_array_layers: 1,
+        };
+        encoder.copy_texture_to_texture(
+            wgpu::ImageCopyTexture {
+                texture: scene.get_compute_objects()[0].get_output_texture().unwrap().get_texture(),
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::ImageCopyTexture {
+                texture: &output.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            copy_size,
+        );
+
         {
+            let view = output
+                .texture
+                .create_view(&wgpu::TextureViewDescriptor::default());
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(self.viewport.get_background()),
+                        //load: wgpu::LoadOp::Clear(self.viewport.get_background()),
+                        load: wgpu::LoadOp::Load,
                         store: wgpu::StoreOp::Store,
                     },
                 })],
@@ -184,7 +210,11 @@ impl<'window> Renderer<'window> {
     }
 
     pub fn create_scene(&self) -> Scene {
-        Scene::new(self.resources.clone())
+        Scene::new(
+            self.device.clone(),
+            self.queue.clone(),
+            self.resources.clone(),
+        )
     }
 
     pub fn set_vsync(&mut self, enable: bool) {
