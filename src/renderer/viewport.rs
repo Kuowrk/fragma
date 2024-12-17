@@ -25,7 +25,7 @@ impl<'window> Viewport<'window> {
             .iter()
             .copied()
             .find(|format| format.is_srgb())
-            .unwrap_or(surface_caps.formats[0]);
+            .unwrap_or(wgpu::TextureFormat::Rgba8Unorm);
 
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_DST,
