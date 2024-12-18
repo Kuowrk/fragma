@@ -17,18 +17,17 @@ impl Shader {
         }
     }
 
-    pub async fn new_from_file(filename: &str, device: &wgpu::Device) -> Result<Self> {
+    pub async fn new_from_file(filepath: &str, device: &wgpu::Device) -> Result<Self> {
         #[cfg(not(target_arch = "wasm32"))]
         let source = {
             let filepath = Path::new(env!("CARGO_MANIFEST_DIR"))
-                .join("shaders")
-                .join(filename);
+                .join(filepath);
             std::fs::read_to_string(filepath)?
         };
         #[cfg(target_arch = "wasm32")]
-        let source = fetch_shader_file(filename).await?;
+        let source = fetch_shader_file(filepath).await?;
         let desc = wgpu::ShaderModuleDescriptor {
-            label: Some(filename),
+            label: Some(filepath),
             source: wgpu::ShaderSource::Wgsl(source.into()),
         };
         Ok(Self::new_from_descriptor(desc, device))
@@ -40,9 +39,9 @@ impl Shader {
 }
 
 #[cfg(target_arch = "wasm32")]
-async fn fetch_shader_file(filename: &str) -> Result<String> {
+async fn fetch_shader_file(filepath: &str) -> Result<String> {
     let base_url = get_base_url();
-    let url = base_url.join(&format!("shaders/{}", filename))?;
+    let url = base_url.join(filepath)?;
     log::info!("Fetching shader from: {}", url);
     let response = reqwest::get(url.as_str()).await?;
     Ok(response.text().await?)
