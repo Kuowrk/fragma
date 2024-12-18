@@ -10,6 +10,12 @@ use color_eyre::eyre::OptionExt;
 fn main() -> Result<()> {
     println!("cargo:rerun-if-changed=shaders/*");
 
+    compile_shaders()?;
+
+    Ok(())
+}
+
+fn compile_shaders() -> Result<()> {
     let shaders_dir = Path::new(&env::var("CARGO_MANIFEST_DIR")?)
         .join("shaders");
 

@@ -1,6 +1,7 @@
-use color_eyre::Result;
+use std::borrow::Cow;
+use color_eyre::{eyre::eyre, Result};
 use std::path::Path;
-
+use color_eyre::eyre::ErrReport;
 #[cfg(target_arch = "wasm32")]
 use reqwest::Url;
 
@@ -17,18 +18,45 @@ impl Shader {
         }
     }
 
-    pub async fn new_from_file(filepath: &str, device: &wgpu::Device) -> Result<Self> {
+    pub async fn new_from_file(
+        filepath: &str,
+        device: &wgpu::Device,
+    ) -> Result<Self> {
         #[cfg(not(target_arch = "wasm32"))]
         let source = {
             let filepath = Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join(filepath);
-            std::fs::read_to_string(filepath)?
+            std::fs::read(filepath)?
         };
         #[cfg(target_arch = "wasm32")]
         let source = fetch_shader_file(filepath).await?;
+
+        let source = match Path::new(filepath)
+            .extension()
+            .and_then(|ext| ext.to_str()) {
+            Some("wgsl") => {
+                let source = std::str::from_utf8(&source)?;
+                Ok::<wgpu::ShaderSource<'_>, ErrReport>(
+                    wgpu::ShaderSource::Wgsl(source.into())
+                )
+            }
+            Some("spv") => Ok::<wgpu::ShaderSource<'_>, ErrReport>(
+                wgpu::util::make_spirv(&source)
+            ),
+            Some(ext) => {
+                return Err(eyre!(
+                    "Unsupported shader file extension: {}",
+                    ext
+                ));
+            }
+            None => {
+                return Err(eyre!("No file extension found"));
+            }
+        }?;
+
         let desc = wgpu::ShaderModuleDescriptor {
             label: Some(filepath),
-            source: wgpu::ShaderSource::Wgsl(source.into()),
+            source,
         };
         Ok(Self::new_from_descriptor(desc, device))
     }
@@ -39,12 +67,12 @@ impl Shader {
 }
 
 #[cfg(target_arch = "wasm32")]
-async fn fetch_shader_file(filepath: &str) -> Result<String> {
+async fn fetch_shader_file(filepath: &str) -> Result<Vec<u8>> {
     let base_url = get_base_url();
     let url = base_url.join(filepath)?;
     log::info!("Fetching shader from: {}", url);
     let response = reqwest::get(url.as_str()).await?;
-    Ok(response.text().await?)
+    Ok(response.bytes().await?.to_vec())
 }
 
 #[cfg(target_arch = "wasm32")]

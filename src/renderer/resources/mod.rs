@@ -204,9 +204,9 @@ async fn create_default_render_materials(
     let mut result = HashMap::new();
 
     let basic_shader_filename = if viewport.get_surface_format().is_srgb() {
-        "shaders/basic.wgsl"
+        "shaders-compiled/basic.spv"
     } else {
-        "shaders/basic_gamma_corrected.wgsl"
+        "shaders-compiled/basic_gamma_corrected.spv"
     };
     result.insert("basic".to_owned(), RenderMaterial::builder()
         .with_bind_group_layouts(&[
@@ -229,7 +229,7 @@ async fn create_default_compute_materials(
         .with_bind_group_layouts(&[
             bind_group_layouts.get("compute storage").unwrap(),
         ])
-        .with_shader(Shader::new_from_file("shaders/basic_compute.wgsl", device).await?)
+        .with_shader(Shader::new_from_file("shaders-compiled/basic_compute.spv", device).await?)
         .build(device)?);
 
     Ok(result)

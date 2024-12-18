@@ -35,6 +35,9 @@ cp public/index.html dist/
 
 mkdir dist/shaders/
 cp shaders/* dist/shaders/
+
+mkdir dist/shaders-compiled/
+cp shaders-compiled/* dist/shaders-compiled/
 '''
 
 [tasks.http-server]
