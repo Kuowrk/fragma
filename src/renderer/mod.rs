@@ -56,7 +56,10 @@ impl<'window> Renderer<'window> {
                     required_limits: if cfg!(target_arch = "wasm32") {
                         wgpu::Limits::downlevel_webgl2_defaults()
                     } else {
-                        wgpu::Limits::default()
+                        wgpu::Limits {
+                            max_push_constant_size: size_of::<ShaderPushConstants>() as u32,
+                            ..Default::default()
+                        }
                     },
                     label: None,
                     memory_hints: Default::default(),
@@ -190,15 +193,9 @@ impl<'window> Renderer<'window> {
             
             // Set push constants
             let push_constants = ShaderPushConstants {
-                flipv: true,
-                gamma_correct: self.viewport.get_surface_format().is_srgb(),
+                flipv: 1,
+                gamma_correct: if self.viewport.get_surface_format().is_srgb() { 0 } else { 1 },
             };
-            render_pass.set_push_constants(
-                wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
-                0,
-                bytemuck::bytes_of(&push_constants),
-            );
-
             for render_object in scene.get_render_objects() {
                 render_object.draw(
                     &mut render_pass,
@@ -207,7 +204,9 @@ impl<'window> Renderer<'window> {
                     &self.viewport,
                     &self.device,
                     &self.queue,
+                    Some(&push_constants),
                 )?;
+
             }
         }
 

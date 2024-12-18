@@ -1,6 +1,7 @@
 use color_eyre::Result;
 use crate::renderer::Camera;
 use crate::renderer::resources::Resources;
+use crate::renderer::resources::shader_data::ShaderPushConstants;
 use crate::renderer::viewport::Viewport;
 
 pub struct RenderObject {
@@ -30,12 +31,22 @@ impl RenderObject {
         viewport: &Viewport,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
+        push_constants: Option<&ShaderPushConstants>,
     ) -> Result<()> {
         let material = resources.get_render_material(&self.material_name)?;
         let texture = resources.get_texture(&self.texture_name)?;
         let model = resources.get_model(&self.model_name)?;
 
         render_pass.set_pipeline(material.get_pipeline());
+
+        if let Some(push_constants) = push_constants {
+            render_pass.set_push_constants(
+                wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                0,
+                bytemuck::bytes_of(push_constants),
+            );
+        }
+
         render_pass.set_bind_group(0, texture.get_bind_group(), &[]);
         render_pass.set_bind_group(1, camera.get_bind_group(
             viewport,

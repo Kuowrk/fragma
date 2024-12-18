@@ -1,6 +1,6 @@
 struct ShaderPushConstants {
-    flipv: bool,
-    gamma_correct: bool,
+    flipv: u32,
+    gamma_correct: u32,
 }
 
 struct VertexInput {
@@ -25,7 +25,7 @@ struct ShaderCameraUniform {
 
 //----------------------------------------------------------------------
 
-var<push_constant> push_constants: ShaderPushConstants;
+var<push_constant> pc: ShaderPushConstants;
 
 @group(1) @binding(0)
 var<uniform> camera: ShaderCameraUniform;
@@ -35,13 +35,14 @@ fn vs_main(
     vertex: VertexInput,
 ) -> VertexOutput {
     var out: VertexOutput;
+
     out.clip_position = camera.viewproj * vec4<f32>(vertex.position, 1.0);
+    if (pc.flipv == 1u) {
+        out.clip_position.y *= -1.0;
+    }
+
     out.uv = vertex.texcoord;
     out.color = vertex.color;
-
-    if (push_constants.flipv) {
-        out.uv.y = 1.0 - out.uv.y;
-    }
 
     return out;
 }
@@ -55,7 +56,7 @@ var s_diffuse: sampler;
 
 fn gamma_correct(color: vec4<f32>) -> vec4<f32> {
     // Convert from linear to sRGB
-    let new_color = pow(color, vec4<f32>(1.0 / 2.2));
+    let new_color = pow(color.rgb, vec3<f32>(1.0 / 2.2));
     return vec4<f32>(new_color, color.a);
 }
 
@@ -63,7 +64,7 @@ fn gamma_correct(color: vec4<f32>) -> vec4<f32> {
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var out = textureSample(t_diffuse, s_diffuse, in.uv);
 
-    if (push_constants.gamma_correct) {
+    if (pc.gamma_correct == 1u) {
         out = gamma_correct(out);
     }
 

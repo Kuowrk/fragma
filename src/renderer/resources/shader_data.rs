@@ -22,8 +22,8 @@ pub struct ShaderCameraUniform {
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Pod, Zeroable)]
 pub struct ShaderPushConstants {
-    pub flipv: bool,
-    pub gamma_correct: bool,
+    pub flipv: u32,
+    pub gamma_correct: u32,
 }
 
 /// Vertex data

@@ -55,7 +55,7 @@ impl<'a> RenderMaterialBuilder<'a> {
                 label: Some("Render Pipeline Layout"),
                 bind_group_layouts: &self.bind_group_layouts,
                 push_constant_ranges: &[wgpu::PushConstantRange {
-                    stages: wgpu::ShaderStages::VERTEX,
+                    stages: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
                     range: 0..size_of::<ShaderPushConstants>() as u32,
                 }],
             });
