@@ -16,6 +16,7 @@ pub use camera::Camera;
 use scene::Scene;
 use viewport::Viewport;
 use resources::Resources;
+use crate::renderer::resources::shader_data::ShaderPushConstants;
 
 pub struct Renderer<'window> {
     viewport: Viewport<'window>,
@@ -186,6 +187,17 @@ impl<'window> Renderer<'window> {
                 occlusion_query_set: None,
                 timestamp_writes: None,
             });
+            
+            // Set push constants
+            let push_constants = ShaderPushConstants {
+                flipv: true,
+                gamma_correct: self.viewport.get_surface_format().is_srgb(),
+            };
+            render_pass.set_push_constants(
+                wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                0,
+                bytemuck::bytes_of(&push_constants),
+            );
 
             for render_object in scene.get_render_objects() {
                 render_object.draw(

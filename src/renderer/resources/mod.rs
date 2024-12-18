@@ -203,17 +203,12 @@ async fn create_default_render_materials(
 ) -> Result<HashMap<String, RenderMaterial>> {
     let mut result = HashMap::new();
 
-    let basic_shader_filename = if viewport.get_surface_format().is_srgb() {
-        "shaders-compiled/basic.spv"
-    } else {
-        "shaders-compiled/basic_gamma_corrected.spv"
-    };
     result.insert("basic".to_owned(), RenderMaterial::builder()
         .with_bind_group_layouts(&[
             bind_group_layouts.get(SINGLE_TEXTURE_BIND_GROUP_LAYOUT_NAME).unwrap(),
             bind_group_layouts.get(CAMERA_BIND_GROUP_LAYOUT_NAME).unwrap(),
         ])
-        .with_shader(Shader::new_from_file(basic_shader_filename, device).await?)
+        .with_shader(Shader::new_from_file("shaders-compiled/basic.spv", device).await?)
         .build(device, viewport)?);
 
     Ok(result)
