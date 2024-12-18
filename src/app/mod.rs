@@ -107,6 +107,12 @@ impl App {
                         }
                         WindowEvent::Resized(physical_size) => {
                             renderer.resize(*physical_size);
+                            scene.resize_compute_output_textures(
+                                physical_size.width, physical_size.height
+                            )
+                                .unwrap_or_else(|report| {
+                                    log::error!("{report}");
+                                });
                         }
                         WindowEvent::ScaleFactorChanged { scale_factor, .. } => {
                             let mut new_size = renderer.get_viewport_size();
