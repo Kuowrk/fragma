@@ -69,6 +69,10 @@ impl<'window> Viewport<'window> {
         self.surface.get_current_texture()
     }
 
+    pub fn get_surface_format(&self) -> &wgpu::TextureFormat {
+        &self.config.format
+    }
+
     pub fn resize(&mut self, new_size: PhysicalSize<u32>, device: &wgpu::Device) {
         if new_size.width > 0 && new_size.height > 0 {
             self.size = new_size;

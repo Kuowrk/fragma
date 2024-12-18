@@ -41,7 +41,12 @@ var t_diffuse: texture_2d<f32>;
 @group(0) @binding(1)
 var s_diffuse: sampler;
 
+fn gamma_correct(color: vec3<f32>) -> vec3<f32> {
+    return pow(color, vec3<f32>(1.0 / 2.2)); // Convert from linear to sRGB
+}
+
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return textureSample(t_diffuse, s_diffuse, in.uv);
+    let color = textureSample(t_diffuse, s_diffuse, in.uv).rgb;
+    return vec4<f32>(gamma_correct(color), 1.0);
 }
