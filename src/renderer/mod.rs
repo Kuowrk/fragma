@@ -52,9 +52,21 @@ impl<'window> Renderer<'window> {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     required_features: wgpu::Features::PUSH_CONSTANTS,
-                    // Disable some features to support web
                     required_limits: if cfg!(target_arch = "wasm32") {
-                        wgpu::Limits::downlevel_webgl2_defaults()
+                        wgpu::Limits {
+                            max_texture_dimension_1d: 8192,
+                            max_texture_dimension_2d: 8192,
+                            max_texture_dimension_3d: 2048,
+                            max_texture_array_layers: 256,
+                            max_bind_groups: 4,
+                            max_buffer_size: 256 * 1024 * 1024, // 256 MB
+                            max_vertex_buffers: 8,
+                            max_vertex_attributes: 16,
+                            max_vertex_buffer_array_stride: 2048,
+                            max_push_constant_size: 128, // Typical browser support
+                            max_storage_buffer_binding_size: 128 * 1024 * 1024, // 128 MB
+                            ..Default::default()
+                        }
                     } else {
                         wgpu::Limits {
                             max_push_constant_size: size_of::<ShaderPushConstants>() as u32,
